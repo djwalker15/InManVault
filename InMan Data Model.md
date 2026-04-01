@@ -1,6 +1,6 @@
 # InMan — Conceptual Data Model
 
-> **Generated:** March 25, 2026 | **Updated:** March 30, 2026
+> **Generated:** March 25, 2026 | **Updated:** March 31, 2026
 > **Purpose:** Map all planned features, their data requirements, and how they connect — designed for Obsidian graph view
 > **Status:** Conceptual — not yet implemented
 > **Auth Provider:** Clerk (string-based user IDs, all user profile data managed by Clerk)
@@ -13,6 +13,7 @@
 - [[Crew]] — Tenant boundary
 - [[User]] — Local reference to Clerk-managed user (slim table)
 - [[CrewMember]] — Join table linking [[User]]s to [[Crew]]s
+- [[Invite]] — Invitation to join a Crew
 
 ### Spaces
 - [[Space]] — Physical hierarchy node
@@ -52,7 +53,7 @@
 - [[ShoppingListItem]] — Line item with separate source FKs (not polymorphic)
 
 ### Kiosk
-- [[KioskSession]] — Device-level session for shared-use environments
+- [[KioskSession]] — Device-level session with token-based auth (Path B). Two-step identification: name select → PIN confirm.
 
 ---
 
@@ -69,6 +70,16 @@
 9. [[Feature 9 - Batching and Prepping]]
 10. [[Feature 10 - Shopping List]]
 11. [[Feature 11 - Kiosk Mode]]
+
+---
+
+## User Journeys
+
+> Full index with all 26 journeys, statuses, and dependencies: [[InMan User Journeys]]
+
+- [[Journey - Onboarding]] — Landing page → sign up → crew creation → space setup → first items → invite members → kiosk enrollment
+- [[Journey - Space Setup]] — Detailed first-time space hierarchy setup (Explainer → Premises → Guided First Branch → Tree Editor → Templates)
+- [[Journey - Adding Inventory]] — Four methods: manual search/create (two-step), bulk import, barcode scan, quick add. Stay-in-flow for multiple items.
 
 ---
 
@@ -91,3 +102,5 @@
 - **Recipe output_product_id.** Links recipe to its output [[Product]] for store intent. See [[Recipe]].
 - **Circular reference guard.** App-level + DB trigger on [[RecipeIngredient]].
 - **Within-category unit conversion.** See [[UnitDefinition]].
+- **Kiosk uses token-based auth (Path B).** Independent of Clerk sessions. See [[KioskSession]].
+- **Invite system.** Code-based invites with expiry and revocation. See [[Invite]].

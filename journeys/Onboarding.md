@@ -50,9 +50,11 @@ Screen asks: "Are you starting a new space or joining one?"
 
 Name the Crew (e.g., "Walker Home", "Haywire Bar"). User becomes Admin automatically.
 
+**Set your PIN:** User is prompted to create a 4+ digit PIN. This is required — used for kiosk identification (name select → PIN confirm) across all [[KioskSession]]s in any [[Crew]] they belong to.
+
 **Data touched:**
 - [[Crew]] (insert — name, created_by, settings)
-- [[CrewMember]] (insert — crew_id, user_id, role = Admin)
+- [[CrewMember]] (insert — crew_id, user_id, role = Admin, kiosk_pin = hashed PIN)
 
 ### Step 5 — Set Up Your Spaces
 
@@ -72,11 +74,13 @@ The space setup experience walks users through five phases:
 
 ### Step 6 — Add Your First Items
 
-Three options:
+> **Detailed journey:** [[Journey - Adding Inventory]] — covers all four methods (manual search/create, bulk import, barcode scan, quick add) and the two-step product resolution → inventory details flow
 
-**Add manually** → search the master [[Product]] catalog or create a custom Product, set quantity/unit/location.
+Three options during onboarding:
 
-**Scan barcodes** → camera-based barcode scanning, resolve to [[Product]]s in master catalog, add quantities and locations.
+**Add manually** → uses the two-step flow from [[Journey - Adding Inventory]] Method 1. Search master [[Product]] catalog → set inventory details. Stays in flow for multiple items.
+
+**Scan barcodes** → uses Method 3 from [[Journey - Adding Inventory]]. Camera-based scanning, auto-resolve to [[Product]]s, continuous scan mode.
 
 **Skip for now** → "You can add items anytime from the Inventory page."
 
@@ -114,9 +118,11 @@ If they have an account → sign in via Clerk. If not → sign up via Clerk. `us
 
 System shows the [[Crew]] name and who invited them. User confirms.
 
+**Set your PIN:** User is prompted to create a 4+ digit PIN (same as Path A). Required for kiosk identification.
+
 **Data touched:**
 - [[Invite]] (update — status = accepted, accepted_by, accepted_at)
-- [[CrewMember]] (insert — crew_id, user_id, role from invite)
+- [[CrewMember]] (insert — crew_id, user_id, role from invite, kiosk_pin = hashed PIN)
 
 ### Step 4 — Dashboard
 
@@ -140,25 +146,26 @@ Admin selects:
 - Which [[Crew]] this kiosk belongs to
 - Which Premises ([[Space]] with unit_type = premises) it's bound to
 - Device name (e.g., "Bar Tablet", "Kitchen iPad")
-- Auth method: PIN or name_select
 - Allowed actions: checkboxes from defined action vocabulary
+
+> **Identification is always two-step** (name select → PIN confirm) and is not configurable per kiosk.
 
 ### Step 4 — Confirm and Enroll
 
 System creates [[KioskSession]], generates a unique token, hashes it, stores the hash in the DB and the raw token in the device's local storage.
 
 **Data touched:**
-- [[KioskSession]] (insert — crew_id, premises_id, device_name, auth_method, allowed_actions, token_hash, is_active = true, created_by)
+- [[KioskSession]] (insert — crew_id, premises_id, device_name, allowed_actions, token_hash, is_active = true, created_by)
 
 ### Step 5 — Kiosk Mode Activates
 
 Admin's Clerk session is no longer relevant. On all subsequent app loads:
 1. Boot sequence checks local storage for kiosk token
 2. Validates against server (is_active = true, token hash matches)
-3. If valid → render kiosk UI with "Who are you?" screen
+3. If valid → render kiosk UI with two-step identification: select your name → enter your PIN
 4. If invalid/missing → fall through to normal Clerk login
 
-**Ongoing:** All kiosk actions go through Supabase edge functions using the kiosk token. `performed_by` is set from PIN/name identification, not from a Clerk JWT.
+**Ongoing:** All kiosk actions go through Supabase edge functions using the kiosk token. `performed_by` is set from the name + PIN identification, not from a Clerk JWT.
 
 ---
 
@@ -186,7 +193,7 @@ The checklist appears on the dashboard after onboarding and persists until dismi
 |---------------|-------------|
 | ✅ Account created | `users` row exists |
 | ✅ Joined [Crew name] | `crew_members` record exists |
-| Set your kiosk PIN | `crew_members.kiosk_pin` is not null (only shown if Crew uses kiosk) |
+| ✅ PIN set | Set during invite acceptance |
 | Browse your spaces | Dismissible — no data condition |
 | Browse inventory | Dismissible — no data condition |
 

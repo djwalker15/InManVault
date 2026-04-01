@@ -2,7 +2,7 @@
 
 > **Generated:** March 31, 2026
 > **Purpose:** Map every user journey across the system — serves as the index for the `journeys/` folder
-> **Status:** 2 of 26 journeys documented
+> **Status:** 3 of 26 journeys documented
 
 ---
 
@@ -20,7 +20,7 @@
 
 | # | Journey | Status | Description |
 |---|---------|--------|-------------|
-| 4 | [[Journey - Adding Inventory]] | ⬜ Not yet | Search/create [[Product]], set quantity + location, barcode scan, bulk import. First [[Flow]] (purchase) created for each item. |
+| 4 | [[Journey - Adding Inventory]] | ✅ Documented | Search/create [[Product]], set quantity + location, barcode scan, bulk import. Four methods: manual search/create, bulk import, barcode scan, quick add. Two-step flow (product resolution → inventory details). Stay-in-flow for multiple items. |
 | 5 | [[Journey - Moving Items]] | ⬜ Not yet | Relocate an item (update `current_space_id`), put items back in their home, bulk reassign. Transfer [[Flow]]s generated. |
 | 6 | [[Journey - Checking Stock]] | ⬜ Not yet | Browse by [[Space]], browse by [[Category]], search, view item detail, check displacement status (unsorted / in place / displaced). |
 | 7 | [[Journey - Restocking]] | ⬜ Not yet | Purchase flow from receiving groceries/deliveries to updating quantities and costs. Overlaps with [[Journey - Shopping Trip]] post-checkout. |
