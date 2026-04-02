@@ -2,7 +2,7 @@
 
 > **Generated:** March 31, 2026
 > **Purpose:** Map every user journey across the system — serves as the index for the `journeys/` folder
-> **Status:** 5 of 26 journeys documented (+ 1 absorbed)
+> **Status:** 6 of 26 journeys documented (+ 1 absorbed)
 
 ---
 
@@ -21,7 +21,7 @@
 | # | Journey | Status | Description |
 |---|---------|--------|-------------|
 | 4 | [[Journey - Adding Inventory]] | ✅ Documented | Search/create [[Product]], set quantity + location, barcode scan, bulk import. Four methods: manual search/create, bulk import, barcode scan, quick add. Two-step flow (product resolution → inventory details). Stay-in-flow for multiple items. |
-| 5 | [[Journey - Moving Items]] | ⬜ Not yet | Relocate an item (update `current_space_id`), put items back in their home, bulk reassign. Transfer [[Flow]]s generated. |
+| 5 | [[Journey - Moving Items]] | ✅ Documented | Five scenarios: single item move (immediate Flow), put-back routine (batch displaced items), set home locations (batch unsorted), bulk reassign with preview (Space to Space), reorganize (space-centric or item-centric free-form redistribution). |
 | 6 | [[Journey - Checking Stock]] | ✅ Documented | Browse by [[Space]], browse by [[Category]], search, view item detail with inline expansion, inline actions (restock, move, waste, add to list), alerts summary (low stock, expired, displaced). |
 | 7 | [[Journey - Intake Session]] | ✅ Documented | Session-based workflow for receiving multiple items (replaces "Restocking"). Two modes: batch table (list-seeded with discrepancy tracking) and sequential (from-scratch). Covers personal post-shopping intake and commercial delivery receiving. Also covers journey #19 (Post-Shopping Intake). |
 | 8 | [[Journey - Expiry Management]] | ⬜ Not yet | Review approaching/expired [[InventoryItem]]s, decide to use or waste, update dates. Connects to [[Journey - Logging Waste]]. |
