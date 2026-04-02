@@ -2,7 +2,7 @@
 
 > **Generated:** March 31, 2026
 > **Purpose:** Map every user journey across the system — serves as the index for the `journeys/` folder
-> **Status:** 6 of 26 journeys documented (+ 1 absorbed)
+> **Status:** 7 of 26 journeys documented (+ 1 absorbed)
 
 ---
 
@@ -12,7 +12,7 @@
 |---|---------|--------|-------------|
 | 1 | [[Journey - Onboarding]] | ✅ Documented | Landing page → sign up → crew creation → space setup → first items → invite members → kiosk enrollment. Three paths: new user (A), invite (B), kiosk enrollment (C). |
 | 2 | [[Journey - Space Setup]] | ✅ Documented | Detailed first-time space hierarchy setup. Five phases: Explainer → Premises → Guided First Branch → Tree Editor → Templates. |
-| 3 | [[Journey - Crew Management]] | ⬜ Not yet | Invite members, change roles, remove members, transfer admin ownership, leave a crew, manage multiple crews. |
+| 3 | [[Journey - Crew Management]] | ✅ Documented | Invite members, change roles, set per-feature permission overrides, remove members, transfer ownership, leave crew, edit settings, delete crew (48-hour waiting period). Owner distinct from Admin. Crew switcher + dedicated settings page. |
 
 ---
 
@@ -24,7 +24,6 @@
 | 5 | [[Journey - Moving Items]] | ✅ Documented | Five scenarios: single item move (immediate Flow), put-back routine (batch displaced items), set home locations (batch unsorted), bulk reassign with preview (Space to Space), reorganize (space-centric or item-centric free-form redistribution). |
 | 6 | [[Journey - Checking Stock]] | ✅ Documented | Browse by [[Space]], browse by [[Category]], search, view item detail with inline expansion, inline actions (restock, move, waste, add to list), alerts summary (low stock, expired, displaced). |
 | 7 | [[Journey - Intake Session]] | ✅ Documented | Session-based workflow for receiving multiple items (replaces "Restocking"). Two modes: batch table (list-seeded with discrepancy tracking) and sequential (from-scratch). Covers personal post-shopping intake and commercial delivery receiving. Also covers journey #19 (Post-Shopping Intake). |
-| 8 | [[Journey - Expiry Management]] | ⬜ Not yet | Review approaching/expired [[InventoryItem]]s, decide to use or waste, update dates. Connects to [[Journey - Logging Waste]]. |
 
 ---
 
@@ -43,6 +42,7 @@
 
 | # | Journey | Status | Description |
 |---|---------|--------|-------------|
+| 8 | [[Journey - Expiry Management]] | ⬜ Not yet | Review approaching/expired [[InventoryItem]]s, decide to use or waste, update dates. Connects to [[Journey - Logging Waste]]. |
 | 13 | [[Journey - Logging Waste]] | ⬜ Not yet | Select [[InventoryItem]], choose waste reason, fill reason-specific detail table, capture photo + notes, submit. Creates waste [[Flow]] + [[WasteEvent]] + detail record atomically via edge function. |
 | 14 | [[Journey - Reviewing Waste History]] | ⬜ Not yet | Filter by time/reason/[[Space]]/[[Category]], view trends, identify problem areas. All data derived from [[WasteEvent]] → [[Flow]] joins. |
 | 15 | [[Journey - Handling Expired Items]] | ⬜ Not yet | System alerts expiry on [[InventoryItem]] → user decides: use it (consumption [[Flow]]), waste it ([[Journey - Logging Waste]]), or extend the date. |
@@ -90,15 +90,16 @@ Onboarding (1) → Space Setup (2) → Adding Inventory (4)
                                   → Creating a Recipe (9)
                                   → Kiosk Enrollment (20)
 
-Adding Inventory (4) → Checking Stock (6) → Expiry Management (8) → Logging Waste (13)
-                     → Moving Items (5)
+Adding Inventory (4) → Checking Stock (6) → Moving Items (5)
                      → Intake Session (7)
+
+Checking Stock (6) → Auto-Generated Shopping List (17)
+                   → Expiry Management (8) → Logging Waste (13)
 
 Creating a Recipe (9) → Editing a Recipe (10)
                       → Cooking a Meal (11)
                       → Prepping for Storage (12)
 
-Checking Stock (6) → Auto-Generated Shopping List (17)
 Cooking a Meal (11) → Auto-Generated Shopping List (17)
 Prepping for Storage (12) → Auto-Generated Shopping List (17)
 
