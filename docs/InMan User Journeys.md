@@ -2,7 +2,7 @@
 
 > **Generated:** March 31, 2026
 > **Purpose:** Map every user journey across the system — serves as the index for the `journeys/` folder
-> **Status:** 9 of 26 journeys documented (+ 1 absorbed)
+> **Status:** 9 of 26 journeys documented (+ 2 absorbed)
 
 ---
 
@@ -45,7 +45,7 @@
 | 8 | [[Journey - Expiry Management]] | ✅ Documented | Dedicated page with three tabs: Triage (expired/urgent/warning items with use/waste/extend/dismiss actions), FIFO Planning (use-this-first ordering across same-Product items), Missing Dates (batch-set expiry on items without dates). Tiered thresholds configurable per Crew. |
 | 13 | [[Journey - Logging Waste]] | ✅ Documented | Five entry points (Checking Stock, alerts, dedicated action, kiosk, batch failure). Flexible ordering (item-first or reason-first). Six reason-specific detail forms. Smart quantity defaults. Photo optional. Confirmation step before deducting. Stay-in-flow. Atomic edge function. |
 | 14 | [[Journey - Reviewing Waste History]] | ⬜ Not yet | Filter by time/reason/[[Space]]/[[Category]], view trends, identify problem areas. All data derived from [[WasteEvent]] → [[Flow]] joins. |
-| 15 | [[Journey - Handling Expired Items]] | ⬜ Not yet | System alerts expiry on [[InventoryItem]] → user decides: use it (consumption [[Flow]]), waste it ([[Journey - Logging Waste]]), or extend the date. |
+| 15 | [[Journey - Handling Expired Items]] | ✅ Covered by #8 | Absorbed into [[Journey - Expiry Management]] Tab 1 (Triage) — expired/expiring items with use/waste/extend/dismiss actions. |
 
 ---
 
