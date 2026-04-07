@@ -20,7 +20,8 @@
 - [[SpaceTemplate]] — Pre-built hierarchy blueprints
 
 ### Catalog
-- [[Product]] — Universal product definition (has `source` field tracking origin: seeded, barcode_api, crew_created, manual, promoted)
+- [[Product]] — Specific purchasable product (has `source` field, optionally belongs to [[ProductGroup]])
+- [[ProductGroup]] — Generic product concept (e.g., "Sugar") that groups specific Products. Used by recipes for generic ingredients.
 - [[Category]] — Product/item categorization
 - [[InventoryItem]] — Crew-specific product instance at a location (quantity is a **cache** derived from [[Flow]] ledger)
 - [[ProductSubmission]] — Review queue for promoting crew-private Products to master catalog
@@ -45,7 +46,7 @@
 ### Recipes & Batching
 - [[Recipe]] — Formula for producing something (has `output_product_id` for store intent)
 - [[RecipeVersion]] — Versioned snapshot of a recipe
-- [[RecipeIngredient]] — Ingredient line (DB trigger prevents circular references)
+- [[RecipeIngredient]] — Ingredient line (four reference types: [[Product]], [[ProductGroup]], sub-[[Recipe]], free-text. DB trigger prevents circular references)
 - [[RecipeStep]] — Instruction step in a recipe version
 - [[BatchEvent]] — Execution of a recipe (completion is an atomic edge function)
 - [[BatchInput]] — Ingredient consumed during a batch
@@ -90,6 +91,7 @@
 - [[Journey - Logging Waste]] — Five entry points, flexible item/reason ordering, six reason-specific detail forms, smart quantity defaults, confirmation step, atomic edge function.
 - [[Journey - Expiry Management]] — Dedicated page: triage (use/waste/extend/dismiss), FIFO planning (use-this-first ordering), missing dates (batch-set). Tiered thresholds per Crew.
 - [[Journey - Reviewing Waste History]] — Waste analytics dashboard: summary cards, charts (time/reason/category/space), detailed log with inline expansion, six filter dimensions, CSV export.
+- [[Journey - Creating a Recipe]] — Hybrid layout, four ingredient types (ProductGroup, Product, sub-Recipe, free-text), live cost estimate, versioning on first save.
 
 ---
 

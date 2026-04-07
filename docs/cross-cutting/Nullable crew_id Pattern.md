@@ -9,6 +9,7 @@ Three entities use a nullable `crew_id` to distinguish global (system-wide) reco
 | Entity | `crew_id` = null | `crew_id` = set |
 |--------|-----------------|----------------|
 | [[Product]] | Master catalog — shared across all [[Crew]]s | Crew-private custom product |
+| [[ProductGroup]] | Global group (pre-seeded or admin-curated) | Crew-created group |
 | [[Category]] | System default category | Crew-custom category |
 | [[Recipe]] | Shared recipe — available to all [[Crew]]s | Crew-private recipe |
 
@@ -25,6 +26,6 @@ Three entities use a nullable `crew_id` to distinguish global (system-wide) reco
 
 ## Features Involved
 
-- [[Feature 3 - Item Catalog]] — [[Product]] and [[Category]]
+- [[Feature 3 - Item Catalog]] — [[Product]], [[ProductGroup]], and [[Category]]
 - [[Feature 8 - Recipes]] — [[Recipe]]
 - [[Feature 2 - Space Hierarchy Setup]] — [[SpaceTemplate]]

@@ -2,7 +2,7 @@
 
 > **Generated:** March 31, 2026
 > **Purpose:** Map every user journey across the system — serves as the index for the `journeys/` folder
-> **Status:** 10 of 26 journeys documented (+ 2 absorbed)
+> **Status:** 11 of 26 journeys documented (+ 2 absorbed)
 
 ---
 
@@ -31,7 +31,7 @@
 
 | # | Journey | Status | Description |
 |---|---------|--------|-------------|
-| 9 | [[Journey - Creating a Recipe]] | ⬜ Not yet | Add ingredients ([[Product]]s + sub-[[Recipe]]s), write [[RecipeStep]]s, set yield, link `output_product_id`, save. First [[RecipeVersion]] created. |
+| 9 | [[Journey - Creating a Recipe]] | ✅ Documented | Hybrid layout (all sections visible). Four ingredient reference types: [[ProductGroup]] (generic), [[Product]] (specific), sub-[[Recipe]], free-text (unlinked, blocks batching). Live cost estimate with missing data indicators. First save creates [[RecipeVersion]] v1. |
 | 10 | [[Journey - Editing a Recipe]] | ⬜ Not yet | Modify an existing [[Recipe]], new [[RecipeVersion]] created automatically, view version history, compare versions. |
 | 11 | [[Journey - Cooking a Meal]] | ⬜ Not yet | Consume-intent [[BatchEvent]]. Pick [[Recipe]], scale it, check ingredient availability (with [[UnitDefinition]] conversion), execute, deduct ingredients via prep_usage [[Flow]]s, log cost. Nothing enters inventory. |
 | 12 | [[Journey - Prepping for Storage]] | ⬜ Not yet | Store/split-intent [[BatchEvent]]. Pick [[Recipe]], scale, execute, create output [[InventoryItem]]s with derived cost from `output_product_id`, assign to [[Space]]. |
@@ -124,6 +124,7 @@ All journeys with data → Cost Reporting (23)
 | [[InventoryItem]] | 4, 5, 6, 7, 8, 11, 12, 13, 15, 17, 18, 21, 24 |
 | [[Space]] | 2, 4, 5, 6, 7, 13, 21, 25 |
 | [[Product]] | 4, 6, 7, 9, 16, 17, 18 |
+| [[ProductGroup]] | 9, 11, 12 |
 | [[Recipe]] | 9, 10, 11, 12, 17 |
 | [[ShoppingList]] / [[ShoppingListItem]] | 7, 16, 17, 18 |
 | [[WasteEvent]] | 13, 14, 15, 21, 23 |

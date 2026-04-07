@@ -2,7 +2,9 @@
 
 > Part of [[Feature 3 - Item Catalog]]
 
-Universal product definition. Lives outside any [[Crew]] (or optionally scoped to a [[Crew]] for custom products). This is the "what is this thing?" layer — brand, barcode, image, size.
+A specific purchasable product. Lives outside any [[Crew]] (or optionally scoped to a [[Crew]] for custom products). This is the "what specific thing is this?" layer — brand, barcode, image, size.
+
+Optionally belongs to a [[ProductGroup]] (the generic concept — e.g., "Sugar") via `product_group_id`.
 
 ## Fields
 
@@ -16,6 +18,7 @@ Universal product definition. Lives outside any [[Crew]] (or optionally scoped t
 | `default_category_id` | FK → [[Category]] | |
 | `size_value` | numeric | |
 | `size_unit` | text | |
+| `product_group_id` | FK → [[ProductGroup]] | Nullable — which generic group this product belongs to (e.g., Domino Sugar → "Sugar" group) |
 | `source` | enum | `seeded` \| `barcode_api` \| `crew_created` \| `manual` \| `promoted` |
 | `crew_id` | FK → [[Crew]] | Nullable — null = master catalog, populated = crew-private |
 | `created_by` | text FK → [[User]] | Clerk user ID (null for seeded products) |
@@ -39,32 +42,33 @@ Tracks how this Product entered the system:
 
 The master catalog is populated through five complementary mechanisms:
 
-1. **Pre-seeded (day one):** Bulk import from Open Food Facts (2M+ products). Provides a useful catalog at launch. `source` = `seeded`.
-2. **Barcode lookup API (ongoing):** When a barcode scan doesn't match the local catalog, the system calls an external API (Open Food Facts, UPCitemdb). If found, auto-creates a master catalog Product. `source` = `barcode_api`.
-3. **Crew-created (ongoing):** Crews create custom products not in the catalog. These start as crew-private. `source` = `crew_created`.
-4. **Manual curation (ongoing):** InMan admin team adds products directly. `source` = `manual`.
-5. **Promotion (ongoing):** Crew-private products promoted to master catalog via [[ProductSubmission]] review (user-suggested or auto-detected duplicates). On approval, `crew_id` → null, `source` → `promoted`.
+1. **Pre-seeded (day one):** Bulk import from Open Food Facts (2M+ products). `source` = `seeded`.
+2. **Barcode lookup API (ongoing):** External API call on unrecognized barcode scan. `source` = `barcode_api`.
+3. **Crew-created (ongoing):** Crews create custom products. `source` = `crew_created`.
+4. **Manual curation (ongoing):** InMan admin team adds products. `source` = `manual`.
+5. **Promotion (ongoing):** Crew-private products promoted via [[ProductSubmission]] review. `source` → `promoted`.
 
 ## Key Decisions
 
-- **Shared master catalog:** Products like "Cholula Hot Sauce, 5 oz" exist once globally. Multiple [[Crew]]s reference the same Product via their own [[InventoryItem]]s.
-- **Custom products:** [[Crew]]s can create products not in the master catalog. These have `crew_id` set and are only visible to that [[Crew]].
-- **Barcode scanning:** A UPC resolves to a Product regardless of which [[Crew]] is scanning it. First checks local catalog, then external API.
-- **Promotion to master catalog:** Via [[ProductSubmission]] — user-suggested or auto-detected, reviewed by InMan admin team only.
-- **Merge on promotion:** If a duplicate master catalog product exists (same barcode), the admin can merge references rather than creating a duplicate.
-- **Soft delete:** Uses `deleted_at`. Historical [[InventoryItem]]s, [[Flow]]s, and [[RecipeIngredient]]s can still reference deleted products.
+- **Shared master catalog** with crew-private custom products ([[Nullable crew_id Pattern]])
+- **ProductGroup link is optional.** A Product can exist without belonging to a group. Ungrouped products are fully functional.
+- **Barcode scanning** resolves to Product regardless of Crew
+- **Promotion to master catalog** via [[ProductSubmission]] with merge capability
+- **Soft delete** via `deleted_at`
 
 ## Relationships
 
+- Optionally belongs to [[ProductGroup]] via `product_group_id`
 - Has a default [[Category]]
 - Referenced by [[InventoryItem]] via `product_id`
 - Referenced by [[RecipeIngredient]] via `product_id`
 - Referenced by [[ShoppingListItem]] via `product_id`
 - Referenced by [[Recipe]] as `output_product_id`
-- Referenced by [[ProductSubmission]] (as the product being submitted, or as a merge target)
+- Referenced by [[ProductSubmission]] (as product being submitted, or merge target)
 
 ## See Also
 
+- [[ProductGroup]] — generic product concept that groups specific Products
 - [[Nullable crew_id Pattern]]
-- [[ProductSubmission]] — the promotion/review workflow
+- [[ProductSubmission]] — promotion/review workflow
 - [[Journey - Adding Inventory]] — where Products are searched and created
