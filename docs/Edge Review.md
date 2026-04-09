@@ -1944,6 +1944,121 @@ Use this document to verify each edge makes conceptual sense, and to annotate wi
 
 ---
 
+## Inventory Audit
+
+### Flow Edges
+
+| # | From | To | Label |
+|---|------|----|-------|
+| 1 | journeys/Inventory Audit.md | Entry: Admin Page |  |
+| 2 | journeys/Inventory Audit.md | Entry: Scheduled Job |  |
+| 3 | journeys/Inventory Audit.md | Entry: Dashboard Alert |  |
+| 4 | Entry: Admin Page | System Reconciliation | Reconciliation |
+| 5 | Entry: Scheduled Job | System Reconciliation |  |
+| 6 | Entry: Dashboard Alert | Review Discrepancies |  |
+| 7 | Entry: Admin Page | Step 1 — Define Scope | Physical count |
+| 8 | System Reconciliation | Review Discrepancies |  |
+| 9 | System Reconciliation | Reconciliation Config |  |
+| 10 | Step 1 — Define Scope | Step 2 — Count |  |
+| 11 | Step 2 — Count | Step 3 — Review Discrepancies |  |
+| 12 | Step 3 — Review Discrepancies | Step 4 — Complete Audit |  |
+| 13 | Step 4 — Complete Audit | Audit History |  |
+
+#### 1. journeys/Inventory Audit.md → Entry: Admin Page
+
+**Data Flow:**
+
+**UI Detail:**
+
+#### 2. journeys/Inventory Audit.md → Entry: Scheduled Job
+
+**Data Flow:**
+
+**UI Detail:**
+
+#### 3. journeys/Inventory Audit.md → Entry: Dashboard Alert
+
+**Data Flow:**
+
+**UI Detail:**
+
+#### 4. Entry: Admin Page → System Reconciliation (Reconciliation)
+
+**Data Flow:**
+
+**UI Detail:**
+
+#### 5. Entry: Scheduled Job → System Reconciliation
+
+**Data Flow:**
+
+**UI Detail:**
+
+#### 6. Entry: Dashboard Alert → Review Discrepancies
+
+**Data Flow:**
+
+**UI Detail:**
+
+#### 7. Entry: Admin Page → Step 1 — Define Scope (Physical count)
+
+**Data Flow:**
+
+**UI Detail:**
+
+#### 8. System Reconciliation → Review Discrepancies
+
+**Data Flow:**
+
+**UI Detail:**
+
+#### 9. System Reconciliation → Reconciliation Config
+
+**Data Flow:**
+
+**UI Detail:**
+
+#### 10. Step 1 — Define Scope → Step 2 — Count
+
+**Data Flow:**
+
+**UI Detail:**
+
+#### 11. Step 2 — Count → Step 3 — Review Discrepancies
+
+**Data Flow:**
+
+**UI Detail:**
+
+#### 12. Step 3 — Review Discrepancies → Step 4 — Complete Audit
+
+**Data Flow:**
+
+**UI Detail:**
+
+#### 13. Step 4 — Complete Audit → Audit History
+
+**Data Flow:**
+
+**UI Detail:**
+
+### Entity References
+
+| # | From | To (Entity) | Label |
+|---|------|-------------|-------|
+| 1 | Review Discrepancies | entities/Flow.md |  |
+| 2 | Review Discrepancies | entities/InventoryItem.md |  |
+
+### Mock References
+
+| # | Mock | Illustrates |
+|---|------|-------------|
+| 1 | [MOCK: Reconciliation Review] | System Reconciliation |
+| 2 | [MOCK: Count Sheet] | Step 2 — Count |
+| 3 | [MOCK: Audit Summary] | Step 4 — Complete Audit |
+
+---
+
 ## Cross-Journey Links
 
 | # | From (Journey) | From Node | To (Journey) | To Node | Label |

@@ -2,7 +2,7 @@
 
 > **Generated:** March 31, 2026
 > **Purpose:** Map every user journey across the system — serves as the index for the `journeys/` folder
-> **Status:** 17 of 26 journeys documented (+ 2 absorbed)
+> **Status:** 18 of 26 journeys documented (+ 2 absorbed)
 
 ---
 
@@ -75,7 +75,7 @@
 | # | Journey | Status | Description |
 |---|---------|--------|-------------|
 | 23 | [[Journey - Cost Reporting]] | ⬜ Not yet | View spending by [[Category]]/time/[[Space]], meal costs from consume [[BatchEvent]]s, waste costs from [[WasteEvent]]s, [[Recipe]] costs from recursive ingredient costing. Full pipeline documented in [[Cost Data Flow]]. |
-| 24 | [[Journey - Inventory Audit]] | ⬜ Not yet | Compare cached `quantity` on [[InventoryItem]] against [[Flow]] ledger sums. Investigate discrepancies. Run reconciliation function to correct drift. |
+| 24 | [[Journey - Inventory Audit]] | ✅ Documented | Two modes: system reconciliation (cached qty vs. Flow sum, scheduled + manual) and physical count (scoped by Space/Category/full, blind counting, discrepancy review). Both produce adjustment [[Flow]]s with [[FlowAdjustmentDetail]]. Audit history preserved. |
 | 25 | [[Journey - Space Reorganization]] | ⬜ Not yet | Restructure [[Space]] hierarchy after renovation. Move items in bulk (transfer [[Flow]]s for each), update `home_space_id` assignments, soft delete removed spaces. |
 | 26 | [[Journey - Data Export]] | ⬜ Not yet | Export inventory, [[Flow]]s, [[WasteEvent]]s, [[Recipe]]s for external analysis or backup. Format options, filtering, date ranges. |
 

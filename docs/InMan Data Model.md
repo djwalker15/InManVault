@@ -30,10 +30,11 @@
 - [[UnitDefinition]] — Unit conversion reference (weight, volume, count)
 
 ### Transactions
-- [[Flow]] — Core transaction ledger (enum + child table pattern: `flow_type` discriminates)
+- [[Flow]] — Core transaction ledger (enum + child table pattern: `flow_type` discriminates). Types: purchase, waste, consumption, transfer, prep_usage, adjustment.
 - [[FlowPurchaseDetail]] — Purchase-specific: unit_cost, source
 - [[FlowTransferDetail]] — Transfer-specific: from_space_id, to_space_id
 - [[FlowPrepUsageDetail]] — Prep-usage-specific: batch_id
+- [[FlowAdjustmentDetail]] — Adjustment-specific: adjustment_type, expected_quantity, actual_quantity, audit_session_id, reason
 - [[IntakeSession]] — Session-based batch receiving (post-shopping intake or delivery)
 - [[IntakeSessionItem]] — Line items within an intake session (expected vs. received, discrepancy tracking)
 
@@ -108,6 +109,7 @@
 - [[Journey - Building a Shopping List]] — Multiple named lists, collaborative with attribution, manual item adding at Product/InventoryItem/ProductGroup level.
 - [[Journey - Auto-Generated Shopping List]] — Three triggers (low stock, recipe needs, planned batch), configurable per Crew, dedicated staging list.
 - [[Journey - Shopping Trip]] — In-store check-off + batched checkout with cost capture and restock target resolution.
+- [[Journey - Inventory Audit]] — System reconciliation (cached vs. Flow sum) and physical count audits. Adjustment Flows preserve audit trail.
 
 ---
 

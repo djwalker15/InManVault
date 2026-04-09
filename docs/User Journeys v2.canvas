@@ -3119,6 +3119,198 @@
 			"y": 5840,
 			"width": 360,
 			"height": 160
+		},
+		{
+			"id": "r000000000000001",
+			"type": "group",
+			"x": -20,
+			"y": 35900,
+			"width": 4440,
+			"height": 2200,
+			"color": "4",
+			"label": "Journey: Inventory Audit"
+		},
+		{
+			"id": "r000000000000002",
+			"type": "group",
+			"x": 1380,
+			"y": 36080,
+			"width": 1560,
+			"height": 700,
+			"color": "6",
+			"label": "Audit: Mode 1 — System Reconciliation"
+		},
+		{
+			"id": "r000000000000003",
+			"type": "group",
+			"x": 1380,
+			"y": 36880,
+			"width": 2560,
+			"height": 900,
+			"color": "6",
+			"label": "Audit: Mode 2 — Physical Count"
+		},
+		{
+			"id": "r000000000000010",
+			"type": "file",
+			"file": "journeys/Inventory Audit.md",
+			"x": 40,
+			"y": 36600,
+			"width": 380,
+			"height": 180,
+			"color": "4"
+		},
+		{
+			"id": "r000000000000011",
+			"type": "text",
+			"text": "### Entry: Admin Page\n`/admin/audit` — \"Run Reconciliation\" or \"Start Physical Count.\"",
+			"x": 520,
+			"y": 36200,
+			"width": 340,
+			"height": 100,
+			"color": "5"
+		},
+		{
+			"id": "r000000000000012",
+			"type": "text",
+			"text": "### Entry: Scheduled Job\nConfigurable cadence (daily/weekly/monthly). Background system reconciliation.",
+			"x": 520,
+			"y": 36380,
+			"width": 340,
+			"height": 100,
+			"color": "5"
+		},
+		{
+			"id": "r000000000000013",
+			"type": "text",
+			"text": "### Entry: Dashboard Alert\n\"Reconciliation found 3 discrepancies.\" Links to review screen.",
+			"x": 520,
+			"y": 36560,
+			"width": 340,
+			"height": 100,
+			"color": "5"
+		},
+		{
+			"id": "r000000000000020",
+			"type": "text",
+			"text": "### System Reconciliation\n\nFor every InventoryItem: compare cached  vs. sum of all Flows. Flag discrepancies. Scheduled (cron) or manual trigger.\n\n**Data:** InventoryItem (read), Flow (read — aggregate sum)",
+			"x": 1440,
+			"y": 36140,
+			"width": 380,
+			"height": 220
+		},
+		{
+			"id": "r000000000000021",
+			"type": "text",
+			"text": "### Review Discrepancies\n\nItems where cached ≠ Flow sum. Per item: Correct (adjustment Flow), Investigate (show Flow history), Dismiss. \"Correct all\" bulk action.\n\n**Data:** Flow (insert — adjustment), InventoryItem (update qty)",
+			"x": 1440,
+			"y": 36400,
+			"width": 380,
+			"height": 200
+		},
+		{
+			"id": "r000000000000022",
+			"type": "text",
+			"text": "### Reconciliation Config\n\nPer-Crew in settings:\n: daily | weekly | monthly | disabled\nDiscrepancies flagged for admin — never auto-corrected.",
+			"x": 1960,
+			"y": 36140,
+			"width": 360,
+			"height": 180
+		},
+		{
+			"id": "r000000000000030",
+			"type": "text",
+			"text": "### Step 1 — Define Scope\n\nChoose what to count: full inventory, by Space (with children toggle), or by Category.\n\n**Data:** Space (read), Category (read)",
+			"x": 1440,
+			"y": 36940,
+			"width": 380,
+			"height": 180
+		},
+		{
+			"id": "r000000000000031",
+			"type": "text",
+			"text": "### Step 2 — Count\n\nCount sheet: items with location, expected qty hidden (prevents bias). Enter actual counts. \"Not found\" (qty=0), \"Found extra.\" Auto-saves. Progress indicator.\n\n**Data:** client-side (auto-save)",
+			"x": 1440,
+			"y": 37160,
+			"width": 380,
+			"height": 220
+		},
+		{
+			"id": "r000000000000032",
+			"type": "text",
+			"text": "### Step 3 — Review Discrepancies\n\nExpected vs. counted. Per item: Adjust (adjustment Flow + reason), Recount, Dismiss. Only discrepancies shown by default.\n\n**Data:** Flow (insert — adjustment), InventoryItem (update qty)",
+			"x": 1960,
+			"y": 36940,
+			"width": 380,
+			"height": 200
+		},
+		{
+			"id": "r000000000000033",
+			"type": "text",
+			"text": "### Step 4 — Complete Audit\n\nSummary: scope, items counted, matches, adjusted, dismissed, net adjustment value. All adjustments share audit_session_id.\n\n**Data:** Flow (insert — batched adjustments)",
+			"x": 1960,
+			"y": 37180,
+			"width": 380,
+			"height": 200
+		},
+		{
+			"id": "r000000000000034",
+			"type": "text",
+			"text": "### Audit History\n\nPrevious results: date, type, scope, discrepancy rate, net adjustment. Tap for full detail from that audit.\n\n**Data:** Flow (read — by audit_session_id)",
+			"x": 2460,
+			"y": 36940,
+			"width": 380,
+			"height": 180
+		},
+		{
+			"id": "r000000000000050",
+			"type": "file",
+			"file": "entities/Flow.md",
+			"x": 2460,
+			"y": 36400,
+			"width": 200,
+			"height": 60,
+			"color": "1"
+		},
+		{
+			"id": "r000000000000051",
+			"type": "file",
+			"file": "entities/InventoryItem.md",
+			"x": 2700,
+			"y": 36400,
+			"width": 200,
+			"height": 60,
+			"color": "1"
+		},
+		{
+			"id": "r000000000000060",
+			"type": "text",
+			"text": "**[MOCK: Reconciliation Review]**\n\nDiscrepancy table: item, cached qty, Flow sum, drift, last Flow. Correct/Investigate/Dismiss per row. \"Correct all\" button.",
+			"x": 1440,
+			"y": 35880,
+			"width": 380,
+			"height": 180,
+			"color": "2"
+		},
+		{
+			"id": "r000000000000061",
+			"type": "text",
+			"text": "**[MOCK: Count Sheet]**\n\nBlind count form: item + location, empty qty input, \"Not found\" button. Expected qty hidden. Progress bar.",
+			"x": 1440,
+			"y": 37420,
+			"width": 380,
+			"height": 180,
+			"color": "2"
+		},
+		{
+			"id": "r000000000000062",
+			"type": "text",
+			"text": "**[MOCK: Audit Summary]**\n\nCompletion dashboard: scope, match rate, adjusted count, net shrinkage value. Audit history table below.",
+			"x": 2460,
+			"y": 37420,
+			"width": 380,
+			"height": 180,
+			"color": "2"
 		}
 	],
 	"edges": [
@@ -5517,6 +5709,134 @@
 			"toNode": "g000000000000010",
 			"toSide": "right",
 			"label": "Start intake"
+		},
+		{
+			"id": "r000000000000100",
+			"fromNode": "r000000000000010",
+			"fromSide": "right",
+			"toNode": "r000000000000011",
+			"toSide": "left"
+		},
+		{
+			"id": "r000000000000101",
+			"fromNode": "r000000000000010",
+			"fromSide": "right",
+			"toNode": "r000000000000012",
+			"toSide": "left"
+		},
+		{
+			"id": "r000000000000102",
+			"fromNode": "r000000000000010",
+			"fromSide": "right",
+			"toNode": "r000000000000013",
+			"toSide": "left"
+		},
+		{
+			"id": "r000000000000110",
+			"fromNode": "r000000000000011",
+			"fromSide": "right",
+			"toNode": "r000000000000020",
+			"toSide": "left",
+			"label": "Reconciliation"
+		},
+		{
+			"id": "r000000000000111",
+			"fromNode": "r000000000000012",
+			"fromSide": "right",
+			"toNode": "r000000000000020",
+			"toSide": "left"
+		},
+		{
+			"id": "r000000000000112",
+			"fromNode": "r000000000000013",
+			"fromSide": "right",
+			"toNode": "r000000000000021",
+			"toSide": "left"
+		},
+		{
+			"id": "r000000000000113",
+			"fromNode": "r000000000000011",
+			"fromSide": "right",
+			"toNode": "r000000000000030",
+			"toSide": "left",
+			"label": "Physical count"
+		},
+		{
+			"id": "r000000000000114",
+			"fromNode": "r000000000000020",
+			"fromSide": "bottom",
+			"toNode": "r000000000000021",
+			"toSide": "top"
+		},
+		{
+			"id": "r000000000000115",
+			"fromNode": "r000000000000020",
+			"fromSide": "right",
+			"toNode": "r000000000000022",
+			"toSide": "left"
+		},
+		{
+			"id": "r000000000000116",
+			"fromNode": "r000000000000030",
+			"fromSide": "bottom",
+			"toNode": "r000000000000031",
+			"toSide": "top"
+		},
+		{
+			"id": "r000000000000117",
+			"fromNode": "r000000000000031",
+			"fromSide": "right",
+			"toNode": "r000000000000032",
+			"toSide": "left"
+		},
+		{
+			"id": "r000000000000118",
+			"fromNode": "r000000000000032",
+			"fromSide": "bottom",
+			"toNode": "r000000000000033",
+			"toSide": "top"
+		},
+		{
+			"id": "r000000000000119",
+			"fromNode": "r000000000000033",
+			"fromSide": "right",
+			"toNode": "r000000000000034",
+			"toSide": "left"
+		},
+		{
+			"id": "r000000000000120",
+			"fromNode": "r000000000000021",
+			"fromSide": "right",
+			"toNode": "r000000000000050",
+			"toSide": "left"
+		},
+		{
+			"id": "r000000000000121",
+			"fromNode": "r000000000000021",
+			"fromSide": "right",
+			"toNode": "r000000000000051",
+			"toSide": "left"
+		},
+		{
+			"id": "r000000000000130",
+			"fromNode": "r000000000000060",
+			"fromSide": "bottom",
+			"toNode": "r000000000000020",
+			"toSide": "top"
+		},
+		{
+			"id": "r000000000000131",
+			"fromNode": "r000000000000061",
+			"fromSide": "top",
+			"toNode": "r000000000000031",
+			"toSide": "bottom"
+		},
+		{
+			"id": "r000000000000132",
+			"fromNode": "r000000000000062",
+			"fromSide": "top",
+			"toNode": "r000000000000033",
+			"toSide": "bottom"
 		}
 	]
 }
