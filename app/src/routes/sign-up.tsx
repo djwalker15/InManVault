@@ -61,7 +61,7 @@ export default function SignUpPage() {
           : await signUp.attemptPhoneNumberVerification({ code })
       if (attempt.status === 'complete' && attempt.createdSessionId) {
         await setActive({ session: attempt.createdSessionId })
-        navigate('/dashboard', { replace: true })
+        navigate('/onboarding', { replace: true })
       } else {
         setError('Verification did not complete. Please try again.')
       }
