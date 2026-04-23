@@ -128,7 +128,7 @@ The conceptual data model covers 11 features across 43 entities. All 26 user jou
 **Tenancy & Auth:**
 - `users` — slim local ref to Clerk user (`user_id text PK`, `created_at`)
 - `crews` — tenant boundary (name, settings, created_by). Has `owner_id` (text FK → User) — the Crew Owner with elevated privileges (delete crew, transfer ownership, remove Admins). Crew deletion has a 48-hour waiting period via `deletion_requested_at`.
-- `crew_members` — join table (crew_id, user_id, role, permission_overrides, kiosk_pin). **`kiosk_pin` is required** — set during sign-up or invite acceptance.
+- `crew_members` — join table (crew_id, user_id, role, permission_overrides, kiosk_pin). **`kiosk_pin` is nullable** — deferred to first kiosk setup to keep sign-up friction low; format (4–8 digits) is validated when present.
 - `invites` — invitation to join a Crew (crew_id, invited_by, email, role, code, status, expires_at). Consumed on acceptance → creates a `crew_members` record.
 
 **Spaces (physical hierarchy):**
