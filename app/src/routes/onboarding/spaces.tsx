@@ -9,6 +9,7 @@ import {
   readExplainerDismissed,
   writeExplainerDismissed,
 } from '@/components/spaces/explainer-storage'
+import { GuidedBranch } from '@/components/spaces/guided-branch'
 import { PremisesForm } from '@/components/spaces/premises-form'
 import { Tree } from '@/components/spaces/tree'
 import type { SpaceNode } from '@/components/spaces/types'
@@ -32,6 +33,7 @@ export default function OnboardingSpacesPage() {
     readExplainerDismissed() ? 'premises' : 'explainer',
   )
   const [crewId, setCrewId] = useState<string | null>(null)
+  const [premises, setPremises] = useState<SpaceNode | null>(null)
   const [nodes, setNodes] = useState<SpaceNode[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -70,7 +72,13 @@ export default function OnboardingSpacesPage() {
         .order('created_at', { ascending: true })
       if (cancelled) return
       if (queryError) return
-      setNodes((data as SpaceNode[] | null) ?? [])
+      const rows: SpaceNode[] = Array.isArray(data) ? (data as SpaceNode[]) : []
+      setNodes(rows)
+      const root = rows.find((n) => n.parent_id === null)
+      if (root) {
+        setPremises(root)
+        setPhase((p) => (p === 'premises' ? 'guided' : p))
+      }
     }
     void loadSpaces()
     return () => {
@@ -108,7 +116,9 @@ export default function OnboardingSpacesPage() {
         .single()
       if (insertError) throw insertError
       if (!data) throw new Error('Premises insert returned no row')
-      setNodes((prev) => [...prev, data as SpaceNode])
+      const row = data as SpaceNode
+      setNodes((prev) => [...prev, row])
+      setPremises(row)
       setPhase('guided')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create Premises')
@@ -166,14 +176,55 @@ export default function OnboardingSpacesPage() {
           </div>
         )}
 
-        {(phase === 'guided' || phase === 'editor') && (
+        {phase === 'guided' && premises && (
+          <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-10">
+            <div className="flex-1">
+              <GuidedBranch
+                premises={premises}
+                onCreate={async (input) => {
+                  if (!user || !crewId) {
+                    throw new Error('Crew context not loaded yet')
+                  }
+                  const { data, error: insertError } = await supabase
+                    .from('spaces')
+                    .insert({
+                      crew_id: crewId,
+                      parent_id: input.parent_id,
+                      unit_type: input.unit_type,
+                      name: input.name,
+                      created_by: user.id,
+                    })
+                    .select(
+                      'space_id, parent_id, unit_type, name, deleted_at',
+                    )
+                    .single()
+                  if (insertError) throw insertError
+                  if (!data) throw new Error('Insert returned no row')
+                  const row = data as SpaceNode
+                  setNodes((prev) => [...prev, row])
+                  return row
+                }}
+                onComplete={() => setPhase('editor')}
+              />
+            </div>
+            <aside className="md:w-64">
+              <h2 className="font-display text-[11px] font-bold uppercase tracking-[0.55px] text-ink-300">
+                Live tree
+              </h2>
+              <div className="mt-3 rounded-2xl bg-paper-100 p-4">
+                <Tree nodes={nodes} />
+              </div>
+            </aside>
+          </div>
+        )}
+
+        {phase === 'editor' && (
           <div className="flex flex-col gap-4">
             <div className="rounded-2xl bg-paper-100 p-4">
               <Tree nodes={nodes} />
             </div>
             <p className="font-body text-base text-ink-700">
-              Coming next — guided branch wizard (P2.5), tree editor (P2.6),
-              and template browser (P2.7).
+              Coming next — full tree editor (P2.6) and template browser (P2.7).
             </p>
           </div>
         )}
