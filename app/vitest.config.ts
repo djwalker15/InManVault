@@ -20,8 +20,6 @@ export default mergeConfig(
           'src/lib/types.ts',
           'src/lib/supabase.ts',
           'src/routes/sso-callback.tsx',
-          'src/routes/landing.tsx',
-          'src/routes/onboarding/decision.tsx',
           'src/routes/onboarding/invite.tsx',
           'src/components/top-nav.tsx',
           'src/components/signed-in/**',
