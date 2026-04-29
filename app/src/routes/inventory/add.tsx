@@ -6,6 +6,7 @@ import { SignedInLayout } from '@/components/signed-in/signed-in-layout'
 import { CustomProductForm } from '@/components/inventory/custom-product-form'
 import { InventoryForm } from '@/components/inventory/inventory-form'
 import { ProductSearch } from '@/components/inventory/product-search'
+import { RestockForm } from '@/components/inventory/restock-form'
 import type { ProductRow, Selection } from '@/components/inventory/types'
 import { useSupabase } from '@/lib/supabase'
 
@@ -53,7 +54,6 @@ export default function AddInventoryPage() {
 
   function handleSelect(selection: Selection) {
     if (selection.kind === 'restock') {
-      // P3.5 will replace this with the real restock sub-flow.
       setPhase({ kind: 'restock', selection })
       return
     }
@@ -74,6 +74,8 @@ export default function AddInventoryPage() {
           ? phase.selection.item.product
           : phase.selection.product
       setLastAddedName(product.name)
+    } else if (phase.kind === 'restock') {
+      setLastAddedName(phase.selection.item.product.name)
     }
     setSessionCount((n) => n + 1)
     setPhase({ kind: 'search' })
@@ -150,9 +152,10 @@ export default function AddInventoryPage() {
             onCancel={() => setPhase({ kind: 'search' })}
           />
         ) : (
-          <RestockPlaceholder
-            selection={phase.selection}
-            onBack={() => setPhase({ kind: 'search' })}
+          <RestockForm
+            row={phase.selection.item}
+            onSaved={handleSaved}
+            onCancel={() => setPhase({ kind: 'search' })}
           />
         )}
       </div>
@@ -160,31 +163,3 @@ export default function AddInventoryPage() {
   )
 }
 
-interface RestockPlaceholderProps {
-  selection: Extract<Selection, { kind: 'restock' }>
-  onBack: () => void
-}
-
-function RestockPlaceholder({ selection, onBack }: RestockPlaceholderProps) {
-  const product = selection.item.product
-  return (
-    <section className="flex flex-col gap-3 rounded-2xl bg-paper-100 p-5">
-      <h2 className="font-display text-base font-bold text-ink-900">
-        Restock — coming next (P3.5)
-      </h2>
-      <p className="font-body text-sm leading-5 text-ink-700">
-        Selected: <strong>{product.name}</strong>
-        {product.brand ? ` (${product.brand})` : ''}. Existing stock:{' '}
-        {selection.item.item.quantity} {selection.item.item.unit} at{' '}
-        {selection.item.locationPath || 'unknown'}.
-      </p>
-      <button
-        type="button"
-        onClick={onBack}
-        className="self-start font-display text-sm font-bold text-sage-700 hover:underline"
-      >
-        ← Pick a different product
-      </button>
-    </section>
-  )
-}

@@ -123,7 +123,7 @@ describe('AddInventoryPage — Step 1 product resolution', () => {
     expect(screen.getByLabelText('Current location')).toBeInTheDocument()
   })
 
-  it('Restock on existing item routes to the restock placeholder', async () => {
+  it('Restock on existing item routes to the RestockForm', async () => {
     makeSupabaseMock({
       crew_members: {
         maybeSingle: { data: { crew_id: 'crew_abc' }, error: null },
@@ -148,10 +148,10 @@ describe('AddInventoryPage — Step 1 product resolution', () => {
       { timeout: 2000 },
     )
     fireEvent.click(screen.getByRole('button', { name: /restock this/i }))
-    expect(screen.getByText(/Restock — coming next/i)).toBeInTheDocument()
-    expect(
-      screen.getByText(/Existing stock: 3 count at Kitchen › Cabinet 1/),
-    ).toBeInTheDocument()
+    // Now on the restock form — quantity-to-add field, scoped Restock CTA.
+    expect(screen.getByLabelText(/quantity to add/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^restock$/i })).toBeInTheDocument()
+    expect(screen.getByText(/3 count/i)).toBeInTheDocument()
   })
 
   it('opens the custom-product form and creates a crew-private product', async () => {
