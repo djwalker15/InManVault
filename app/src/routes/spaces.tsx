@@ -5,6 +5,7 @@ import { HelpCircle } from 'lucide-react'
 import { NavHeader, PrimaryButton } from '@/components/ds'
 import { SignedInLayout } from '@/components/signed-in/signed-in-layout'
 import { SpacesExplainer } from '@/components/spaces/explainer'
+import { TemplateBrowser } from '@/components/spaces/template-browser'
 import { TreeEditor } from '@/components/spaces/tree-editor'
 import type { SpaceNode, UnitType } from '@/components/spaces/types'
 import { useSupabase } from '@/lib/supabase'
@@ -66,6 +67,21 @@ export default function SpacesPage() {
     () => nodes.some((n) => n.parent_id === null),
     [nodes],
   )
+
+  const hasNonPremisesSpaces = useMemo(
+    () => nodes.some((n) => n.parent_id !== null && !n.deleted_at),
+    [nodes],
+  )
+
+  async function refetchSpaces() {
+    if (!crewId) return
+    const { data } = await supabase
+      .from('spaces')
+      .select('space_id, parent_id, unit_type, name, deleted_at')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: true })
+    setNodes(Array.isArray(data) ? (data as SpaceNode[]) : [])
+  }
 
   async function insertNode(input: {
     parent_id: string
@@ -151,15 +167,23 @@ export default function SpacesPage() {
         ) : !hasPremises && !loading ? (
           <EmptyState />
         ) : (
-          <TreeEditor
-            nodes={nodes}
-            onAddChild={insertNode}
-            onAddSibling={insertNode}
-            onRename={rename}
-            onReclassify={reclassify}
-            onDelete={softDelete}
-            emptyState="Loading…"
-          />
+          <>
+            <div className="flex justify-end">
+              <TemplateBrowser
+                hasExistingSpaces={hasNonPremisesSpaces}
+                onApplied={refetchSpaces}
+              />
+            </div>
+            <TreeEditor
+              nodes={nodes}
+              onAddChild={insertNode}
+              onAddSibling={insertNode}
+              onRename={rename}
+              onReclassify={reclassify}
+              onDelete={softDelete}
+              emptyState="Loading…"
+            />
+          </>
         )}
       </div>
     </SignedInLayout>

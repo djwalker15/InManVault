@@ -12,6 +12,7 @@ import {
 } from '@/components/spaces/explainer-storage'
 import { GuidedBranch } from '@/components/spaces/guided-branch'
 import { PremisesForm } from '@/components/spaces/premises-form'
+import { TemplateBrowser } from '@/components/spaces/template-browser'
 import { Tree } from '@/components/spaces/tree'
 import { TreeEditor } from '@/components/spaces/tree-editor'
 import type { SpaceNode, UnitType } from '@/components/spaces/types'
@@ -86,6 +87,18 @@ export default function OnboardingSpacesPage() {
       cancelled = true
     }
   }, [supabase, crewId])
+
+  async function refetchSpaces() {
+    const { data } = await supabase
+      .from('spaces')
+      .select('space_id, parent_id, unit_type, name, deleted_at')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: true })
+    const rows: SpaceNode[] = Array.isArray(data) ? (data as SpaceNode[]) : []
+    setNodes(rows)
+    const root = rows.find((n) => n.parent_id === null)
+    if (root) setPremises(root)
+  }
 
   function dismissExplainer() {
     writeExplainerDismissed(true)
@@ -179,7 +192,15 @@ export default function OnboardingSpacesPage() {
 
         {phase === 'guided' && premises && (
           <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-10">
-            <div className="flex-1">
+            <div className="flex flex-1 flex-col gap-4">
+              <div className="flex justify-end">
+                <TemplateBrowser
+                  hasExistingSpaces={nodes.some(
+                    (n) => n.parent_id !== null && !n.deleted_at,
+                  )}
+                  onApplied={refetchSpaces}
+                />
+              </div>
               <GuidedBranch
                 premises={premises}
                 onCreate={async (input) => {
@@ -225,6 +246,14 @@ export default function OnboardingSpacesPage() {
               Edit your tree below — add anywhere, rename, change types, or
               soft-delete branches. When you're done, finish onboarding.
             </p>
+            <div className="flex justify-end">
+              <TemplateBrowser
+                hasExistingSpaces={nodes.some(
+                  (n) => n.parent_id !== null && !n.deleted_at,
+                )}
+                onApplied={refetchSpaces}
+              />
+            </div>
             <div className="rounded-2xl bg-paper-100 p-4">
               <TreeEditor
                 nodes={nodes}
