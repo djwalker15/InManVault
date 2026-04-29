@@ -86,4 +86,76 @@ describe('DashboardPage', () => {
       await screen.findByRole('heading', { name: /welcome, there/i }),
     ).toBeInTheDocument()
   })
+
+  it('Path A: renders 5-item checklist with only Sign Up + Crew complete for a fresh owner account', async () => {
+    mockClerk({ user: { id: 'user_1', firstName: 'Davontae' } })
+    makeSupabaseMock({
+      crew_members: {
+        select: { count: 1, error: null },
+        maybeSingle: {
+          data: { crew_id: 'crew_1', role: 'owner' },
+          error: null,
+        },
+      },
+      spaces: { select: { count: 1, error: null } },
+      inventory_items: { select: { count: 0, error: null } },
+      invites: { select: { count: 0, error: null } },
+    })
+
+    renderWithRouter(<DashboardPage />)
+
+    // All 5 Path A labels are present
+    expect(await screen.findByText('Sign Up')).toBeInTheDocument()
+    expect(screen.getByText('Create your Crew')).toBeInTheDocument()
+    expect(screen.getByText('Set up spaces')).toBeInTheDocument()
+    expect(screen.getByText('Add first items')).toBeInTheDocument()
+    expect(screen.getByText('Invite crew members')).toBeInTheDocument()
+
+    // No Path B-only label
+    expect(screen.queryByText(/^Joined /i)).not.toBeInTheDocument()
+
+    // Sign Up + Create your Crew are complete (line-through)
+    await waitFor(() => {
+      expect(screen.getByText('Sign Up')).toHaveClass('line-through')
+      expect(screen.getByText('Create your Crew')).toHaveClass('line-through')
+    })
+
+    // Remaining three are incomplete
+    expect(screen.getByText('Set up spaces')).not.toHaveClass('line-through')
+    expect(screen.getByText('Add first items')).not.toHaveClass('line-through')
+    expect(screen.getByText('Invite crew members')).not.toHaveClass('line-through')
+  })
+
+  it('Path B: renders 4-item checklist with "Joined <crewName>" shown for an invited member', async () => {
+    mockClerk({ user: { id: 'user_2', firstName: 'Alex' } })
+    makeSupabaseMock({
+      crew_members: {
+        select: { count: 1, error: null },
+        maybeSingle: {
+          data: { crew_id: 'crew_1', role: 'member' },
+          error: null,
+        },
+      },
+      crews: { single: { data: { name: 'Walker Home' }, error: null } },
+    })
+
+    renderWithRouter(<DashboardPage />)
+
+    // Path B-specific labels appear
+    expect(await screen.findByText('Joined Walker Home')).toBeInTheDocument()
+    expect(screen.getByText('Browse your spaces')).toBeInTheDocument()
+    expect(screen.getByText('Browse inventory')).toBeInTheDocument()
+
+    // No Path A-only labels
+    await waitFor(() => {
+      expect(screen.queryByText('Create your Crew')).not.toBeInTheDocument()
+      expect(screen.queryByText('Set up spaces')).not.toBeInTheDocument()
+    })
+
+    // Sign Up + Joined are complete
+    expect(screen.getByText('Sign Up')).toHaveClass('line-through')
+    expect(screen.getByText('Joined Walker Home')).toHaveClass('line-through')
+    expect(screen.getByText('Browse your spaces')).not.toHaveClass('line-through')
+    expect(screen.getByText('Browse inventory')).not.toHaveClass('line-through')
+  })
 })
