@@ -92,13 +92,16 @@ describe('AddInventoryPage — Step 1 product resolution', () => {
     expect(screen.getByText(/Kitchen › Cabinet 1/)).toBeInTheDocument()
   })
 
-  it('selects a catalog product and routes to the Step 2 placeholder', async () => {
+  it('selects a catalog product and routes to the inventory form (P3.4)', async () => {
     makeSupabaseMock({
       crew_members: {
         maybeSingle: { data: { crew_id: 'crew_abc' }, error: null },
       },
       products: { select: { data: [masterProduct], error: null } },
       inventory_items: { select: { data: [], error: null } },
+      categories: { select: { data: [], error: null } },
+      unit_definitions: { select: { data: [], error: null } },
+      spaces: { select: { data: [], error: null } },
     })
     renderWithRouter(<AddInventoryPage />)
     await waitFor(() => {
@@ -114,8 +117,10 @@ describe('AddInventoryPage — Step 1 product resolution', () => {
       { timeout: 2000 },
     )
     fireEvent.click(screen.getByRole('button', { name: /tomato paste/i }))
-    expect(screen.getByText(/Step 2 — coming next/i)).toBeInTheDocument()
-    expect(screen.getByText(/selected:/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /add to inventory/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Current location')).toBeInTheDocument()
   })
 
   it('Restock on existing item routes to the restock placeholder', async () => {
@@ -167,6 +172,7 @@ describe('AddInventoryPage — Step 1 product resolution', () => {
       },
       categories: { select: { data: [], error: null } },
       unit_definitions: { select: { data: [], error: null } },
+      spaces: { select: { data: [], error: null } },
       products: { single: { data: newProduct, error: null } },
     })
     renderWithRouter(<AddInventoryPage />)
@@ -198,9 +204,57 @@ describe('AddInventoryPage — Step 1 product resolution', () => {
       )
     })
     await waitFor(() => {
-      expect(screen.getByText(/Step 2 — coming next/i)).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /add to inventory/i }),
+      ).toBeInTheDocument()
     })
-    expect(screen.getByText(/Homemade syrup/)).toBeInTheDocument()
+  })
+
+  it('after a successful save, returns to search with a session counter', async () => {
+    makeSupabaseMock(
+      {
+        crew_members: {
+          maybeSingle: { data: { crew_id: 'crew_abc' }, error: null },
+        },
+        products: { select: { data: [masterProduct], error: null } },
+        inventory_items: { select: { data: [], error: null } },
+        categories: { select: { data: [], error: null } },
+        unit_definitions: {
+          select: { data: [{ unit: 'oz', unit_category: 'weight' }], error: null },
+        },
+        spaces: {
+          select: {
+            data: [
+              { space_id: 'p', parent_id: null, unit_type: 'premises', name: 'My House' },
+              { space_id: 'a', parent_id: 'p', unit_type: 'area', name: 'Kitchen' },
+            ],
+            error: null,
+          },
+        },
+      },
+      { record_purchase: { data: 'item_new', error: null } },
+    )
+    renderWithRouter(<AddInventoryPage />)
+    fireEvent.change(
+      await screen.findByPlaceholderText(/tomato paste/i),
+      { target: { value: 'tom' } },
+    )
+    await waitFor(
+      () => {
+        expect(screen.getByText(/catalog matches/i)).toBeInTheDocument()
+      },
+      { timeout: 2000 },
+    )
+    fireEvent.click(screen.getByRole('button', { name: /tomato paste/i }))
+    fireEvent.change(await screen.findByLabelText('Current location'), {
+      target: { value: 'a' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /add to inventory/i }))
+    await waitFor(() => {
+      expect(screen.getByText(/added tomato paste/i)).toBeInTheDocument()
+    })
+    expect(screen.getByText(/1 item added this session/i)).toBeInTheDocument()
+    expect(screen.getByText(/search for a product/i)).toBeInTheDocument()
   })
 
   it('back-arrow routes to /inventory', async () => {

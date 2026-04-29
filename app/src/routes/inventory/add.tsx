@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Check } from 'lucide-react'
 import { SignedInLayout } from '@/components/signed-in/signed-in-layout'
 import { CustomProductForm } from '@/components/inventory/custom-product-form'
+import { InventoryForm } from '@/components/inventory/inventory-form'
 import { ProductSearch } from '@/components/inventory/product-search'
 import type { ProductRow, Selection } from '@/components/inventory/types'
 import { useSupabase } from '@/lib/supabase'
@@ -16,6 +17,7 @@ type Phase =
   | { kind: 'search' }
   | { kind: 'custom' }
   | { kind: 'selected'; selection: Selection }
+  | { kind: 'restock'; selection: Extract<Selection, { kind: 'restock' }> }
 
 export default function AddInventoryPage() {
   const { user } = useUser()
@@ -25,6 +27,8 @@ export default function AddInventoryPage() {
   const [crewId, setCrewId] = useState<string | null>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'search' })
   const [crewLoading, setCrewLoading] = useState(true)
+  const [sessionCount, setSessionCount] = useState(0)
+  const [lastAddedName, setLastAddedName] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -48,6 +52,11 @@ export default function AddInventoryPage() {
   }, [supabase])
 
   function handleSelect(selection: Selection) {
+    if (selection.kind === 'restock') {
+      // P3.5 will replace this with the real restock sub-flow.
+      setPhase({ kind: 'restock', selection })
+      return
+    }
     setPhase({ kind: 'selected', selection })
   }
 
@@ -56,6 +65,18 @@ export default function AddInventoryPage() {
       kind: 'selected',
       selection: { kind: 'product', product },
     })
+  }
+
+  function handleSaved() {
+    if (phase.kind === 'selected') {
+      const product =
+        phase.selection.kind === 'restock'
+          ? phase.selection.item.product
+          : phase.selection.product
+      setLastAddedName(product.name)
+    }
+    setSessionCount((n) => n + 1)
+    setPhase({ kind: 'search' })
   }
 
   return (
@@ -74,6 +95,33 @@ export default function AddInventoryPage() {
             Add an item
           </h1>
         </header>
+
+        {sessionCount > 0 && phase.kind === 'search' && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-start gap-3 rounded-xl bg-sage-100/40 p-3"
+          >
+            <span
+              aria-hidden
+              className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-sage-700 text-white"
+            >
+              <Check size={14} strokeWidth={3} />
+            </span>
+            <div className="flex flex-col">
+              <p className="font-display text-sm font-bold text-ink-900">
+                {lastAddedName
+                  ? `Added ${lastAddedName}.`
+                  : 'Item added.'}
+              </p>
+              <p className="font-body text-xs text-ink-700">
+                {sessionCount} item{sessionCount === 1 ? '' : 's'} added this
+                session. Search again to keep going, or tap back when you're
+                done.
+              </p>
+            </div>
+          </div>
+        )}
 
         {crewLoading ? (
           <p className="font-body text-sm text-ink-600">Loading…</p>
@@ -94,8 +142,15 @@ export default function AddInventoryPage() {
             onCreated={handleCustomCreated}
             onCancel={() => setPhase({ kind: 'search' })}
           />
+        ) : phase.kind === 'selected' ? (
+          <InventoryForm
+            crewId={crewId}
+            selection={phase.selection}
+            onSaved={handleSaved}
+            onCancel={() => setPhase({ kind: 'search' })}
+          />
         ) : (
-          <SelectedPlaceholder
+          <RestockPlaceholder
             selection={phase.selection}
             onBack={() => setPhase({ kind: 'search' })}
           />
@@ -105,39 +160,23 @@ export default function AddInventoryPage() {
   )
 }
 
-interface SelectedPlaceholderProps {
-  selection: Selection
+interface RestockPlaceholderProps {
+  selection: Extract<Selection, { kind: 'restock' }>
   onBack: () => void
 }
 
-/**
- * Step 1 hands off to Step 2 (P3.4 — quantity, unit, location, etc.) and
- * the restock sub-flow (P3.5). Until those land, this placeholder confirms
- * the selection so the search experience is testable end-to-end.
- */
-function SelectedPlaceholder({ selection, onBack }: SelectedPlaceholderProps) {
-  const product =
-    selection.kind === 'restock'
-      ? selection.item.product
-      : selection.product
-  const headline =
-    selection.kind === 'restock'
-      ? 'Restock — coming next (P3.5)'
-      : 'Step 2 — coming next (P3.4)'
-
+function RestockPlaceholder({ selection, onBack }: RestockPlaceholderProps) {
+  const product = selection.item.product
   return (
     <section className="flex flex-col gap-3 rounded-2xl bg-paper-100 p-5">
       <h2 className="font-display text-base font-bold text-ink-900">
-        {headline}
+        Restock — coming next (P3.5)
       </h2>
       <p className="font-body text-sm leading-5 text-ink-700">
         Selected: <strong>{product.name}</strong>
-        {product.brand ? ` (${product.brand})` : ''}.{' '}
-        {selection.kind === 'restock'
-          ? `Existing stock: ${selection.item.item.quantity} ${selection.item.item.unit} at ${selection.item.locationPath || 'unknown'}.`
-          : selection.kind === 'add-another'
-            ? "We'll create a new inventory record at the location you pick next."
-            : 'Pick how much and where, then save.'}
+        {product.brand ? ` (${product.brand})` : ''}. Existing stock:{' '}
+        {selection.item.item.quantity} {selection.item.item.unit} at{' '}
+        {selection.item.locationPath || 'unknown'}.
       </p>
       <button
         type="button"
