@@ -16,7 +16,7 @@ vi.mock('react-router-dom', async () => {
 
 async function submit(crewName = 'Walker Home') {
   await userEvent.type(
-    screen.getByPlaceholderText(/walker home/i),
+    screen.getByPlaceholderText(/my house/i),
     crewName,
   )
   await userEvent.click(screen.getByRole('button', { name: /create crew/i }))
@@ -27,7 +27,7 @@ describe('CrewCreationPage', () => {
     mockNavigate.mockClear()
   })
 
-  it('upserts users, inserts crews with .select().single(), inserts crew_members, then navigates to /dashboard', async () => {
+  it('upserts users, inserts crews with .select().single(), inserts crew_members, then navigates to /onboarding/spaces', async () => {
     mockClerk({ user: { id: 'user_abc' } })
     const sb = makeSupabaseMock({
       users: { upsert: { data: null, error: null } },
@@ -39,7 +39,7 @@ describe('CrewCreationPage', () => {
     await submit('Walker Home')
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: true })
+      expect(mockNavigate).toHaveBeenCalledWith('/onboarding/spaces', { replace: true })
     })
 
     expect(sb.from).toHaveBeenCalledWith('users')

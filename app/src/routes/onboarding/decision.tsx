@@ -1,97 +1,48 @@
-import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Leaf, Mail, Star } from 'lucide-react'
-import { OnboardingLayout } from '@/components/onboarding/onboarding-layout'
+import { NavHeader, ProgressBar, DecisionCard, CtaTray, PrimaryButton } from '@/components/ds'
+
+type Selection = 'create' | 'invite'
 
 export default function CrewDecisionPage() {
   const navigate = useNavigate()
+  const [selection, setSelection] = useState<Selection>('create')
+
+  function handleContinue() {
+    if (selection === 'create') {
+      navigate('/onboarding/new')
+    } else {
+      navigate('/invite')
+    }
+  }
 
   return (
-    <OnboardingLayout
-      step={2}
-      total={5}
-      footer={
-        <div className="flex justify-center">
-          <button
-            type="button"
-            onClick={() => navigate('/dashboard')}
-            className="border-b border-transparent pb-[3px] font-body text-sm text-ink-500 hover:border-ink-500"
-          >
-            I'm just exploring — skip for now
-          </button>
+    <div className="flex min-h-full flex-col bg-paper-150">
+      <NavHeader title="Welcome" leading="none" />
+      <main className="mx-auto flex w-full max-w-[512px] flex-1 flex-col px-6 pt-4 pb-32">
+        <ProgressBar step={1} total={5} className="mb-6" />
+        <div className="flex flex-col gap-3">
+          <DecisionCard
+            glyph="🌱"
+            title="Start a new Crew"
+            body="Create a fresh workspace for your home, bar, or kitchen. You'll be the Crew Admin."
+            selected={selection === 'create'}
+            onClick={() => setSelection('create')}
+          />
+          <DecisionCard
+            glyph="📨"
+            title="I have an invite"
+            body="Joining a family member's pantry or a workplace? Paste your invite code."
+            selected={selection === 'invite'}
+            onClick={() => setSelection('invite')}
+          />
         </div>
-      }
-    >
-      <div className="pb-10 pl-2">
-        <h1 className="font-display text-[30px] font-bold leading-[1.3] tracking-[-0.4px] text-ink-900">
-          Welcome.
-          <br />
-          Let's get you set up.
-        </h1>
-        <p className="mt-4 max-w-sm font-body text-lg leading-[29.25px] text-ink-700">
-          A Crew is a shared workspace for your inventory. Pick one.
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-6">
-        <DecisionCard
-          icon={<Leaf size={18} />}
-          title="Start a new Crew"
-          description="Create a fresh workspace for your home, bar, or kitchen. You'll be the Crew Admin."
-          onClick={() => navigate('/onboarding/new')}
-          badge={<RecommendedBadge />}
-        />
-        <DecisionCard
-          icon={<Mail size={20} />}
-          title="I have an invite"
-          description="Joining a family member's pantry or a workplace? Paste your invite code."
-          onClick={() => navigate('/onboarding/invite')}
-        />
-      </div>
-    </OnboardingLayout>
-  )
-}
-
-interface DecisionCardProps {
-  icon: ReactNode
-  title: string
-  description: string
-  onClick: () => void
-  badge?: ReactNode
-}
-
-function DecisionCard({
-  icon,
-  title,
-  description,
-  onClick,
-  badge,
-}: DecisionCardProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full flex-col items-start rounded-xl bg-white p-6 text-left shadow-ambient-lg transition hover:-translate-y-px"
-    >
-      <div className="mb-6 flex size-12 items-center justify-center rounded-full bg-paper-200 text-sage-700">
-        {icon}
-      </div>
-      <h2 className="mb-2 font-display text-xl font-bold leading-7 text-ink-900">
-        {title}
-      </h2>
-      <p className="mb-6 font-body text-base leading-[26px] text-ink-700">
-        {description}
-      </p>
-      {badge}
-    </button>
-  )
-}
-
-function RecommendedBadge() {
-  return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-paper-250 px-3 py-1.5 font-body text-xs text-ink-600">
-      <Star size={11} className="fill-current" />
-      Recommended for first-time users
-    </span>
+      </main>
+      <CtaTray>
+        <PrimaryButton arrow onClick={handleContinue}>
+          Continue
+        </PrimaryButton>
+      </CtaTray>
+    </div>
   )
 }

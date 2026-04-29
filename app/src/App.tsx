@@ -7,7 +7,7 @@ import SignUpPage from './routes/sign-up'
 import SSOCallbackPage from './routes/sso-callback'
 import CrewDecisionPage from './routes/onboarding/decision'
 import CrewCreationPage from './routes/onboarding/new'
-import InvitePage from './routes/onboarding/invite'
+import InviteAcceptPage, { InviteEntryPage } from './routes/invite-accept'
 import DashboardPage from './routes/dashboard'
 
 export default function App() {
@@ -22,7 +22,8 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/onboarding" element={<CrewDecisionPage />} />
         <Route path="/onboarding/new" element={<CrewCreationPage />} />
-        <Route path="/onboarding/invite" element={<InvitePage />} />
+        <Route path="/invite" element={<InviteEntryPage />} />
+        <Route path="/invite/:code" element={<InviteAcceptPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

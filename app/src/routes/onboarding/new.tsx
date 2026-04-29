@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '@clerk/clerk-react'
-import { OnboardingLayout } from '@/components/onboarding/onboarding-layout'
+import { NavHeader, ProgressBar, Field, CtaTray, PrimaryButton } from '@/components/ds'
 import { useSupabase } from '@/lib/supabase'
 
 export default function CrewCreationPage() {
@@ -46,7 +46,7 @@ export default function CrewCreationPage() {
       })
       if (memberError) throw memberError
 
-      navigate('/dashboard', { replace: true })
+      navigate('/onboarding/spaces', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create crew')
     } finally {
@@ -55,57 +55,36 @@ export default function CrewCreationPage() {
   }
 
   return (
-    <OnboardingLayout step={2} total={5}>
-      <form onSubmit={handleSubmit} className="flex flex-1 flex-col">
-        <div className="pb-10 pl-2">
-          <h1 className="font-display text-[30px] font-bold leading-[1.3] tracking-[-0.4px] text-ink-900">
-            Name your Crew
-          </h1>
-          <p className="mt-4 max-w-sm font-body text-base leading-[26px] text-ink-700">
-            A Crew is a shared workspace. You'll be the Admin.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <label
-            htmlFor="crew-name"
-            className="font-display text-sm font-bold uppercase tracking-[0.35px] text-ink-900"
-          >
-            Crew Name
-          </label>
-          <input
-            id="crew-name"
-            type="text"
-            required
-            minLength={2}
-            maxLength={64}
-            value={crewName}
-            onChange={(e) => setCrewName(e.target.value)}
-            placeholder="e.g. Walker Home, Haywire Bar"
-            className="rounded-xl bg-paper-100 px-4 py-[18px] font-body text-base text-ink-900 outline-none placeholder:text-ink-500 focus:ring-2 focus:ring-sage-600/40"
-            autoFocus
-          />
-          <p className="pt-1 font-body text-sm text-ink-500">
-            You can rename this later.
-          </p>
-        </div>
-
+    <form onSubmit={handleSubmit} className="flex min-h-full flex-col bg-paper-150">
+      <NavHeader leading="back" title="New crew" />
+      <main className="mx-auto flex w-full max-w-[512px] flex-1 flex-col gap-6 px-6 pt-4">
+        <ProgressBar step={2} total={5} />
+        <Field
+          label="CREW NAME"
+          placeholder="My House"
+          hint="You can rename this later."
+          autoFocus
+          required
+          minLength={2}
+          maxLength={64}
+          value={crewName}
+          onValueChange={setCrewName}
+        />
         {error && (
-          <p className="mt-6 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
           </p>
         )}
-
-        <div className="mt-auto pb-6 pt-8">
-          <button
-            type="submit"
-            disabled={submitting || crewName.trim().length < 2}
-            className="flex h-14 w-full items-center justify-center rounded-xl bg-gradient-to-br from-sage-700 to-sage-600 font-display text-lg font-bold text-white shadow-cta transition hover:brightness-105 disabled:opacity-60"
-          >
-            {submitting ? 'Creating…' : 'Create Crew'}
-          </button>
-        </div>
-      </form>
-    </OnboardingLayout>
+      </main>
+      <CtaTray>
+        <PrimaryButton
+          arrow
+          type="submit"
+          disabled={submitting || crewName.trim().length < 2}
+        >
+          {submitting ? 'Creating…' : 'Create Crew'}
+        </PrimaryButton>
+      </CtaTray>
+    </form>
   )
 }

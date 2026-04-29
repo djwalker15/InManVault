@@ -20,6 +20,9 @@ type Op =
 type TableConfig = Partial<Record<Op, QueryResult | Promise<QueryResult>>>
 type SupabaseConfig = Record<string, TableConfig>
 
+type RpcResult = { data?: unknown; error: Error | null }
+type RpcResultMap = Record<string, RpcResult>
+
 export interface TableMock {
   upsert: ReturnType<typeof vi.fn>
   insert: ReturnType<typeof vi.fn>
@@ -44,6 +47,7 @@ export interface TableMock {
 export interface SupabaseMock {
   client: SupabaseClient
   from: ReturnType<typeof vi.fn>
+  rpc: ReturnType<typeof vi.fn>
   tables: Record<string, TableMock>
 }
 
@@ -110,7 +114,10 @@ function makeBuilder(config: TableConfig): TableMock & PromiseLike<QueryResult> 
   return builder as TableMock & PromiseLike<QueryResult>
 }
 
-export function makeSupabaseMock(config: SupabaseConfig = {}): SupabaseMock {
+export function makeSupabaseMock(
+  config: SupabaseConfig = {},
+  rpcs: RpcResultMap = {},
+): SupabaseMock {
   const tables: Record<string, TableMock> = {}
 
   for (const table of Object.keys(config)) {
@@ -124,9 +131,14 @@ export function makeSupabaseMock(config: SupabaseConfig = {}): SupabaseMock {
     return tables[table]
   })
 
-  const client = { from } as unknown as SupabaseClient
+  const rpc = vi.fn((name: string) => {
+    const result: RpcResult = rpcs[name] ?? { data: null, error: null }
+    return Promise.resolve(result)
+  })
+
+  const client = { from, rpc } as unknown as SupabaseClient
 
   vi.mocked(useSupabase).mockReturnValue(client)
 
-  return { client, from, tables }
+  return { client, from, rpc, tables }
 }
