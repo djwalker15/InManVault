@@ -1,12 +1,18 @@
 import { useState, type ReactNode } from 'react'
-import { UserButton } from '@clerk/clerk-react'
+import { UserButton, useUser } from '@clerk/clerk-react'
 import { Brand, Sidenav } from '@/components/ds'
 import { TopNav } from '@/components/top-nav'
+import { useActiveCrew } from '@/lib/active-crew'
 import { BottomNav } from './bottom-nav'
+import { CrewSwitcher } from './crew-switcher'
 import { SidenavContent } from './sidenav-content'
 
 export function SignedInLayout({ children }: { children: ReactNode }) {
   const [sidenavOpen, setSidenavOpen] = useState(false)
+  const { user } = useUser()
+  const { memberships, activeCrewId, setActive } = useActiveCrew(
+    user?.id ?? null,
+  )
 
   return (
     <div className="flex min-h-full flex-col bg-paper-150">
@@ -24,6 +30,16 @@ export function SignedInLayout({ children }: { children: ReactNode }) {
         ariaLabel="InMan navigation"
         title={<Brand size={24} />}
       >
+        <CrewSwitcher
+          memberships={memberships}
+          activeCrewId={activeCrewId}
+          onSelect={(id) => {
+            setActive(id)
+            setSidenavOpen(false)
+          }}
+          onNavigate={() => setSidenavOpen(false)}
+        />
+        <hr className="my-3 border-paper-300" />
         <SidenavContent onNavigate={() => setSidenavOpen(false)} />
       </Sidenav>
     </div>
