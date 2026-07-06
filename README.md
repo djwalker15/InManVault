@@ -34,12 +34,34 @@ The demo crew is owned by a dedicated Clerk dev-instance login — **`demo+clerk
 
 ## Local setup
 
+App against a remote (staging) Supabase — lightest path:
+
 ```sh
 cd app
 cp .env.example .env.local   # fill in Clerk + Supabase dev keys
 npm ci
 npm run dev
 ```
+
+### One-command local stack
+
+To run the **whole stack locally** — Supabase (Postgres/PostgREST/Studio in Docker) + migrations +
+seed + edge functions + the Vite app — use `scripts/dev-stack.sh` (needs Docker + the Supabase CLI;
+Clerk auth stays on the remote dev instance). It boots Supabase, repoints `app/.env.local` at the
+local stack (backing up your existing file, preserving your Clerk key), serves the edge functions, and
+starts the dev server:
+
+```sh
+scripts/dev-stack.sh                                   # default: Demo Kitchen seed + functions + app
+npm run stack --prefix app -- --tunnel                 # same, exposed over HTTPS via a Cloudflare tunnel
+scripts/dev-stack.sh --reset --seed demo,bulk --seed-items 200   # + 200 bulk inventory items
+scripts/dev-stack.sh --reset --seed none               # catalog only, no crew/inventory
+scripts/dev-stack.sh --down                            # stop Supabase + restore app/.env.local
+```
+
+Ctrl-C stops the app, functions, and tunnel; Supabase keeps running (use `--down` to stop it). Seed
+profiles are configurable and extensible — see [`supabase/seeds/README.md`](supabase/seeds/README.md)
+for the available profiles and how to author your own. Run `scripts/dev-stack.sh --help` for all flags.
 
 Tests: `npm run test` (vitest watch), `npm run test:run` (single pass), `npm run test:e2e` (Playwright; needs real creds in `app/.env.test`, skips without them). Pre-commit runs eslint + `vitest related` on staged files via husky.
 

@@ -12,3 +12,7 @@ node_modules/
 supabase/.temp/
 supabase/.branches/
 supabase/.env.local
+
+# dev-stack.sh runtime artifacts
+.dev-stack-*.log
+*.local.bak
