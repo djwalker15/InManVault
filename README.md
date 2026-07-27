@@ -79,11 +79,18 @@ scripts/new-worktree.sh kiosk-pin --rm                 # remove the worktree (br
 Worktrees land in `$HOME` by default (native WSL filesystem — far faster than `/mnt/c` for
 `node_modules` and file watching); override with `--path` or `$INMAN_WORKTREE_HOME`.
 
-Two things stay singletons across worktrees. **Local Supabase** is one Docker stack per machine (keyed
-on `project_id` in `supabase/config.toml`), so only one worktree should run `dev-stack.sh` — the others
-run `npm run dev --prefix app -- --port <reserved> --strictPort` against it, and a `--reset` from either
-wipes shared data. **Playwright** pins port 5173 with `reuseExistingServer`, so run `test:e2e` in one
-worktree at a time.
+**Local Supabase stays a singleton** across worktrees: it's one Docker stack per machine (keyed on
+`project_id` in `supabase/config.toml`), so only one worktree should run `dev-stack.sh` — the others
+run `npm run dev --prefix app -- --port <reserved> --strictPort` against it, and a `--reset` from
+either wipes shared data.
+
+Playwright picks up the same reserved port automatically (`.dev-port`, then `PLAYWRIGHT_PORT`, then
+5173), so `test:e2e` runs in parallel worktrees stay isolated. `PLAYWRIGHT_PORT` is also the override
+to use in the main checkout, where the default 5173 is black-holed on WSL:
+
+```sh
+PLAYWRIGHT_PORT=5174 npm run test:e2e --prefix app
+```
 
 Tests: `npm run test` (vitest watch), `npm run test:run` (single pass), `npm run test:e2e` (Playwright; needs real creds in `app/.env.test`, skips without them). Pre-commit runs eslint + `vitest related` on staged files via husky.
 
