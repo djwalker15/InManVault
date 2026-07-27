@@ -73,8 +73,13 @@ hooks), and reserves a free Vite port so two sessions never collide:
 ```sh
 scripts/new-worktree.sh kiosk-pin                      # → ~/inman-kiosk-pin on feat/kiosk-pin
 scripts/new-worktree.sh receipt-parse --branch fix/receipt-parse --port 5180
+scripts/new-worktree.sh spike --base HEAD --local      # fork from unpushed local work
 scripts/new-worktree.sh kiosk-pin --rm                 # remove the worktree (branch left intact)
 ```
+
+Worktrees fork from `origin/<base>` so they start from what's on GitHub; the script warns when your
+local base is ahead. Pass `--local` to fork from the local ref instead (any revision — branch, tag,
+`HEAD`, SHA).
 
 Worktrees land in `$HOME` by default (native WSL filesystem — far faster than `/mnt/c` for
 `node_modules` and file watching); override with `--path` or `$INMAN_WORKTREE_HOME`.

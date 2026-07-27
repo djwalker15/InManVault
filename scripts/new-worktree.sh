@@ -31,6 +31,12 @@ PORT_FILE=".dev-port"
 # Gitignored files a fresh worktree can't inherit, relative to the repo root.
 ENV_FILES=(app/.env.local app/.env.test supabase/.env.local)
 
+# Everything this script itself puts in a worktree. These read as untracked
+# whenever their .gitignore rules haven't reached the base branch yet, so both
+# the --rm dirty check and `git worktree remove` would refuse over copies that
+# aren't work worth protecting.
+OUR_FILES=("$PORT_FILE" "${ENV_FILES[@]}")
+
 # --- pretty logging ----------------------------------------------------------
 c_blue='\033[0;34m'; c_green='\033[0;32m'; c_yellow='\033[0;33m'; c_red='\033[0;31m'; c_dim='\033[2m'; c_off='\033[0m'
 step() { printf "${c_blue}▸ %s${c_off}\n" "$*"; }
@@ -46,6 +52,7 @@ WT_PATH=""
 WT_HOME="${INMAN_WORKTREE_HOME:-$HOME}"
 PORT=""
 WANT_FETCH=true
+WANT_LOCAL=false
 WANT_INSTALL=true
 WANT_FORCE=false
 MODE=add             # add | rm
@@ -64,7 +71,11 @@ FLAGS
   --path <dir>      Worktree location (default: $INMAN_WORKTREE_HOME/inman-<slice>,
                     where $INMAN_WORKTREE_HOME defaults to $HOME).
   --port N          Pin the dev-server port (default: next free >= 5175).
-  --no-fetch        Skip `git fetch origin <base>`; fork from the local ref.
+  --local           Fork from the LOCAL <base> instead of origin/<base>, for
+                    branching off unpushed work. Accepts any local revision
+                    (branch, tag, HEAD, SHA). Implies --no-fetch.
+  --no-fetch        Skip `git fetch origin <base>`; origin/<base> is still
+                    preferred if it exists (use --local to override that).
   --no-install      Skip `npm ci` in app/ (also skips husky hook setup).
   --rm              Remove the worktree for <slice>. Leaves the branch alone.
   --force           With --rm, discard uncommitted changes.
@@ -73,6 +84,7 @@ FLAGS
 EXAMPLES
   scripts/new-worktree.sh kiosk-pin
   scripts/new-worktree.sh receipt-parse --branch fix/receipt-parse --port 5180
+  scripts/new-worktree.sh spike --base HEAD --local     # fork from where you are now
   scripts/new-worktree.sh kiosk-pin --rm
 EOF
 }
@@ -94,6 +106,7 @@ while [ $# -gt 0 ]; do
     --path=*)     WT_PATH="${1#*=}"; shift ;;
     --port)       PORT="${2:?--port needs a value}"; shift 2 ;;
     --port=*)     PORT="${1#*=}"; shift ;;
+    --local)      WANT_LOCAL=true; shift ;;
     --no-fetch)   WANT_FETCH=false; shift ;;
     --no-install) WANT_INSTALL=false; shift ;;
     --rm)         MODE=rm; shift ;;
@@ -118,19 +131,18 @@ if [ "$MODE" = "rm" ]; then
   git worktree list --porcelain | sed -n 's/^worktree //p' | grep -qxF "$WT_PATH" \
     || die "no worktree registered at $WT_PATH (see: git worktree list)"
 
-  # Ignore our own port file: it reads as untracked until the .gitignore rule
-  # for it reaches whatever base branch this worktree forked from.
-  DIRTY="$(git -C "$WT_PATH" status --porcelain | grep -v "^?? $PORT_FILE\$" || true)"
+  DIRTY="$(git -C "$WT_PATH" status --porcelain \
+    | grep -vxFf <(printf '?? %s\n' "${OUR_FILES[@]}") || true)"
   if [ "$WANT_FORCE" != true ] && [ -n "$DIRTY" ]; then
     die "$WT_PATH has uncommitted changes — commit them, or re-run with --force to discard"
   fi
 
   WT_BRANCH="$(git -C "$WT_PATH" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
   step "Removing worktree $WT_PATH …"
-  # Drop our own artifact so git's untracked-file check doesn't trip on it and
-  # force us into `git worktree remove --force`, which would also skip the
-  # checks that actually matter.
-  rm -f "$WT_PATH/$PORT_FILE"
+  # Drop our own artifacts so git's untracked-file check doesn't trip on them and
+  # force us into `git worktree remove --force`, which would also skip the checks
+  # that actually matter.
+  for f in "${OUR_FILES[@]}"; do rm -f "$WT_PATH/$f"; done
   if [ "$WANT_FORCE" = true ]; then
     git worktree remove --force "$WT_PATH"
   else
@@ -153,15 +165,29 @@ EXISTING_WT="$(git worktree list --porcelain \
   | awk -v b="refs/heads/$BRANCH" '/^worktree /{p=substr($0,10)} $0=="branch "b{print p}')"
 [ -n "$EXISTING_WT" ] && die "branch '$BRANCH' is already checked out at $EXISTING_WT"
 
+# --local resolves entirely against local refs, so there's nothing to fetch.
+[ "$WANT_LOCAL" = true ] && WANT_FETCH=false
+
 if [ "$WANT_FETCH" = true ]; then
   step "Fetching origin/$BASE …"
   git fetch origin "$BASE" --quiet || warn "fetch failed — falling back to the local ref"
 fi
 
-# Prefer the remote-tracking ref so a new worktree starts from what's on GitHub,
-# not from whatever the local branch happens to be sitting on.
-if git rev-parse --verify --quiet "origin/$BASE" >/dev/null; then
+if [ "$WANT_LOCAL" = true ]; then
+  # ^{commit} so this accepts a branch, tag, HEAD, or raw SHA — not just a branch.
+  git rev-parse --verify --quiet "$BASE^{commit}" >/dev/null \
+    || die "no local revision '$BASE' (--local never falls back to origin)"
+  BASE_REF="$BASE"
+# Otherwise prefer the remote-tracking ref, so a worktree starts from what's on
+# GitHub rather than whatever the local branch happens to be sitting on.
+elif git rev-parse --verify --quiet "origin/$BASE" >/dev/null; then
   BASE_REF="origin/$BASE"
+  # Forking from origin while local work sits unpushed is the one case where the
+  # default silently does the wrong thing — say so rather than let it surprise.
+  if git rev-parse --verify --quiet "refs/heads/$BASE" >/dev/null; then
+    AHEAD="$(git rev-list --count "origin/$BASE..$BASE" 2>/dev/null || echo 0)"
+    [ "$AHEAD" -gt 0 ] && warn "local '$BASE' is $AHEAD commit(s) ahead of origin/$BASE — pass --local to fork from those instead"
+  fi
 elif git rev-parse --verify --quiet "$BASE" >/dev/null; then
   BASE_REF="$BASE"
   warn "no origin/$BASE — forking from the local '$BASE'"
@@ -251,6 +277,4 @@ printf "${c_dim}Run the app against the shared local Supabase stack:${c_off}\n"
 printf "  npm run dev --prefix app -- --port %s --strictPort\n\n" "$PORT"
 printf "${c_dim}Backend: only ONE worktree should run scripts/dev-stack.sh — local Supabase is\n"
 printf "a single Docker stack per machine, so a second --reset would wipe the first's data.\n\n"
-printf "Playwright pins port 5173 with reuseExistingServer, so parallel 'npm run test:e2e'\n"
-printf "runs will collide (and may silently test another worktree's dev server). Run e2e in\n"
-printf "one worktree at a time.${c_off}\n"
+printf "Playwright reads %s, so 'npm run test:e2e' here is already isolated on port %s.${c_off}\n" "$PORT_FILE" "$PORT"
