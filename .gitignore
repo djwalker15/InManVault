@@ -16,3 +16,6 @@ supabase/.env.local
 # dev-stack.sh runtime artifacts
 .dev-stack-*.log
 *.local.bak
+
+# new-worktree.sh: this worktree's reserved Vite port
+.dev-port

@@ -63,6 +63,28 @@ Ctrl-C stops the app, functions, and tunnel; Supabase keeps running (use `--down
 profiles are configurable and extensible — see [`supabase/seeds/README.md`](supabase/seeds/README.md)
 for the available profiles and how to author your own. Run `scripts/dev-stack.sh --help` for all flags.
 
+### Parallel worktrees
+
+To work on several branches at once (e.g. one agent session per branch), `scripts/new-worktree.sh`
+creates an isolated worktree off `dev`, copies the gitignored env files a fresh checkout can't inherit
+(`app/.env.local`, `app/.env.test`, `supabase/.env.local`), runs `npm ci` (which re-wires the husky
+hooks), and reserves a free Vite port so two sessions never collide:
+
+```sh
+scripts/new-worktree.sh kiosk-pin                      # → ~/inman-kiosk-pin on feat/kiosk-pin
+scripts/new-worktree.sh receipt-parse --branch fix/receipt-parse --port 5180
+scripts/new-worktree.sh kiosk-pin --rm                 # remove the worktree (branch left intact)
+```
+
+Worktrees land in `$HOME` by default (native WSL filesystem — far faster than `/mnt/c` for
+`node_modules` and file watching); override with `--path` or `$INMAN_WORKTREE_HOME`.
+
+Two things stay singletons across worktrees. **Local Supabase** is one Docker stack per machine (keyed
+on `project_id` in `supabase/config.toml`), so only one worktree should run `dev-stack.sh` — the others
+run `npm run dev --prefix app -- --port <reserved> --strictPort` against it, and a `--reset` from either
+wipes shared data. **Playwright** pins port 5173 with `reuseExistingServer`, so run `test:e2e` in one
+worktree at a time.
+
 Tests: `npm run test` (vitest watch), `npm run test:run` (single pass), `npm run test:e2e` (Playwright; needs real creds in `app/.env.test`, skips without them). Pre-commit runs eslint + `vitest related` on staged files via husky.
 
 ## Releases
