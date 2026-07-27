@@ -20,7 +20,12 @@ ENV_FILE="$APP_DIR/.env.local"
 ENV_BAK="$APP_DIR/.env.local.bak"
 SEEDS_DIR="$ROOT/supabase/seeds"
 FUNCTIONS_ENV="$ROOT/supabase/.env.local"
-APP_URL="http://localhost:5173"
+APP_PORT=5173
+APP_URL="http://localhost:$APP_PORT"
+# Tunnel origin MUST use the IPv4 literal: Vite (host:true) binds 0.0.0.0 (IPv4
+# only), but on many boxes `localhost` resolves to ::1 (IPv6) → cloudflared can't
+# reach the origin and returns 502. 127.0.0.1 forces the matching IPv4 path.
+TUNNEL_ORIGIN="http://127.0.0.1:$APP_PORT"
 STUDIO_URL="http://localhost:54323"
 
 # --- pretty logging ----------------------------------------------------------
@@ -287,8 +292,8 @@ if [ "$WANT_TUNNEL" = true ]; then
     warn "cloudflared not installed and npx unavailable — skipping tunnel. Install: npm i -g cloudflared"
   fi
   if [ "${#CF_CMD[@]}" -gt 0 ]; then
-    step "Starting Cloudflare tunnel…"
-    setsid "${CF_CMD[@]}" tunnel --url "$APP_URL" >"$ROOT/.dev-stack-tunnel.log" 2>&1 &
+    step "Starting Cloudflare tunnel → $TUNNEL_ORIGIN …"
+    setsid "${CF_CMD[@]}" tunnel --url "$TUNNEL_ORIGIN" >"$ROOT/.dev-stack-tunnel.log" 2>&1 &
     TUNNEL_PID=$!
     for _ in $(seq 1 30); do
       TUNNEL_URL="$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "$ROOT/.dev-stack-tunnel.log" 2>/dev/null | head -1 || true)"
@@ -317,5 +322,7 @@ fi
 printf "${c_green}───────────────────────────────────────────────────${c_off}\n"
 printf "${c_dim}Ctrl-C stops the app + functions/tunnel; Supabase stays up. Run --down to stop it.${c_off}\n\n"
 
-step "Starting Vite dev server…"
-npm run dev --prefix "$APP_DIR"
+step "Starting Vite dev server on port $APP_PORT…"
+# --strictPort so Vite never drifts to 5174 (which would leave the tunnel's
+# fixed origin pointing at nothing). If the port is taken, fail loudly instead.
+npm run dev --prefix "$APP_DIR" -- --port "$APP_PORT" --strictPort
