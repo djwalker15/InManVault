@@ -20,12 +20,11 @@ ENV_FILE="$APP_DIR/.env.local"
 ENV_BAK="$APP_DIR/.env.local.bak"
 SEEDS_DIR="$ROOT/supabase/seeds"
 FUNCTIONS_ENV="$ROOT/supabase/.env.local"
-APP_PORT=5173
-APP_URL="http://localhost:$APP_PORT"
-# Tunnel origin MUST use the IPv4 literal: Vite (host:true) binds 0.0.0.0 (IPv4
-# only), but on many boxes `localhost` resolves to ::1 (IPv6) → cloudflared can't
-# reach the origin and returns 502. 127.0.0.1 forces the matching IPv4 path.
-TUNNEL_ORIGIN="http://127.0.0.1:$APP_PORT"
+# Default to 5174, not Vite's 5173: on this WSL box port 5173 is black-holed
+# (Windows has something bound there; WSL forwards localhost:5173 to it), so Vite
+# can't bind 5173 and falls back to 5174. Pinning 5174 keeps the dev server and
+# the tunnel origin on the same known port. Override with --port on other boxes.
+APP_PORT=5174
 STUDIO_URL="http://localhost:54323"
 
 # --- pretty logging ----------------------------------------------------------
@@ -62,6 +61,7 @@ FLAGS
   --no-reset        Never reset; only additively layer profiles onto the current volume.
   --no-functions    Don't serve edge functions.
   --tunnel          Expose the app over HTTPS via a Cloudflare quick tunnel.
+  --port N          Vite dev-server port (default: 5174; 5173 is black-holed on WSL).
   --down            Stop Supabase, restore app/.env.local from backup, and exit.
   -h, --help        Show this help.
 
@@ -84,6 +84,8 @@ while [ $# -gt 0 ]; do
     --no-reset)     WANT_RESET=no; shift ;;
     --no-functions) WANT_FUNCTIONS=false; shift ;;
     --tunnel)       WANT_TUNNEL=true; shift ;;
+    --port)         APP_PORT="${2:?--port needs a value}"; shift 2 ;;
+    --port=*)       APP_PORT="${1#*=}"; shift ;;
     --down)         MODE=down; shift ;;
     -h|--help)      usage; exit 0 ;;
     *)              die "unknown flag: $1 (see --help)" ;;
@@ -91,6 +93,14 @@ while [ $# -gt 0 ]; do
 done
 
 [[ "$SEED_ITEMS" =~ ^[0-9]+$ ]] || die "--seed-items must be a non-negative integer (got: $SEED_ITEMS)"
+[[ "$APP_PORT" =~ ^[0-9]+$ ]] || die "--port must be a port number (got: $APP_PORT)"
+
+# Derived URLs (after flags so --port takes effect). The tunnel origin uses the
+# 127.0.0.1 literal, not localhost: Vite (host:true) binds 0.0.0.0 (IPv4 only),
+# but localhost can resolve to ::1 (IPv6) here → cloudflared 502s. IPv4 literal
+# forces the matching path.
+APP_URL="http://localhost:$APP_PORT"
+TUNNEL_ORIGIN="http://127.0.0.1:$APP_PORT"
 
 # --- parse seed spec into BASE (none|demo) + EXTRA profiles -------------------
 BASE_SEED="demo"
@@ -323,6 +333,7 @@ printf "${c_green}────────────────────�
 printf "${c_dim}Ctrl-C stops the app + functions/tunnel; Supabase stays up. Run --down to stop it.${c_off}\n\n"
 
 step "Starting Vite dev server on port $APP_PORT…"
-# --strictPort so Vite never drifts to 5174 (which would leave the tunnel's
-# fixed origin pointing at nothing). If the port is taken, fail loudly instead.
+# --strictPort so Vite stays on $APP_PORT instead of drifting to the next free
+# port (which would leave the tunnel's fixed origin pointing at nothing). If the
+# port is already taken, fail loudly instead of silently moving.
 npm run dev --prefix "$APP_DIR" -- --port "$APP_PORT" --strictPort
