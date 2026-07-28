@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/djwalker15/InMan/compare/inman-v0.4.0...inman-v0.4.1) (2026-07-28)
+
+
+### Bug Fixes
+
+* **e2e:** make the Playwright dev-server port configurable ([973d699](https://github.com/djwalker15/InMan/commit/973d699b3a99b1d10a97f4f75dc8157a49a5b105))
+
 ## [0.4.0](https://github.com/djwalker15/InMan/compare/inman-v0.3.2...inman-v0.4.0) (2026-06-25)
 
 
