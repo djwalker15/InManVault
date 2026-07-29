@@ -53,6 +53,28 @@ Where `docs/CLAUDE.md` and an older note disagree, `docs/CLAUDE.md` wins. It als
 
 `inman-design-system/` is a reference bundle, not an npm package. The CSS tokens have been mirrored into `app/src/index.css`; the JSX components are reference implementations to translate into Tailwind + TS components under `app/src/components/ds/`.
 
+## Working in a worktree (parallel sessions)
+
+When asked to work in a worktree (e.g. "make a worktree for kiosk-pin"):
+
+1. Run `scripts/new-worktree.sh <slice>` from the repo root. It creates `~/inman-<slice>` off
+   `origin/dev`, copies the gitignored env files a fresh checkout can't inherit (`app/.env.local`,
+   `app/.env.test`, `supabase/.env.local`), runs `npm ci` (which re-wires the husky hooks, since
+   `core.hooksPath` is the relative `app/.husky/_`), and reserves a free Vite port in `.dev-port`.
+2. Switch the session in with `EnterWorktree`, passing **`path`** set to the path the script printed.
+
+**Never pass `EnterWorktree`'s `name` parameter here.** That creates a second, unprovisioned worktree
+under `.claude/worktrees/` — no env files, no deps, no port, and on the `/mnt/c` Windows mount, which
+is dramatically slower for `node_modules` and file watching. `$HOME` is deliberate.
+
+Cleanup is `scripts/new-worktree.sh <slice> --rm`, run from the main checkout. `ExitWorktree` will not
+remove a worktree entered by `path`; `action: "keep"` only returns the session to its original directory.
+
+**Local Supabase is one Docker stack per machine**, keyed on `project_id` in `supabase/config.toml`.
+Only one worktree runs `scripts/dev-stack.sh`; the others run the app alone against it
+(`npm run dev --prefix app -- --port <reserved> --strictPort`). A `--reset` from any worktree wipes the
+data every worktree shares. Playwright reads `.dev-port`, so `test:e2e` is already isolated per worktree.
+
 ## Working in `app/` (frontend)
 
 - **Stack:** Vite 8, React 19, TypeScript, React Router v7, Clerk v5, Supabase JS v2, Tailwind v4, Vitest 4, Playwright 1.59.

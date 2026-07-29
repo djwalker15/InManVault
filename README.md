@@ -34,11 +34,67 @@ The demo crew is owned by a dedicated Clerk dev-instance login — **`demo+clerk
 
 ## Local setup
 
+App against a remote (staging) Supabase — lightest path:
+
 ```sh
 cd app
 cp .env.example .env.local   # fill in Clerk + Supabase dev keys
 npm ci
 npm run dev
+```
+
+### One-command local stack
+
+To run the **whole stack locally** — Supabase (Postgres/PostgREST/Studio in Docker) + migrations +
+seed + edge functions + the Vite app — use `scripts/dev-stack.sh` (needs Docker + the Supabase CLI;
+Clerk auth stays on the remote dev instance). It boots Supabase, repoints `app/.env.local` at the
+local stack (backing up your existing file, preserving your Clerk key), serves the edge functions, and
+starts the dev server:
+
+```sh
+scripts/dev-stack.sh                                   # default: Demo Kitchen seed + functions + app
+npm run stack --prefix app -- --tunnel                 # same, exposed over HTTPS via a Cloudflare tunnel
+scripts/dev-stack.sh --reset --seed demo,bulk --seed-items 200   # + 200 bulk inventory items
+scripts/dev-stack.sh --reset --seed none               # catalog only, no crew/inventory
+scripts/dev-stack.sh --down                            # stop Supabase + restore app/.env.local
+```
+
+Ctrl-C stops the app, functions, and tunnel; Supabase keeps running (use `--down` to stop it). Seed
+profiles are configurable and extensible — see [`supabase/seeds/README.md`](supabase/seeds/README.md)
+for the available profiles and how to author your own. Run `scripts/dev-stack.sh --help` for all flags.
+
+### Parallel worktrees
+
+To work on several branches at once (e.g. one agent session per branch), `scripts/new-worktree.sh`
+creates an isolated worktree off `dev`, copies the gitignored env files a fresh checkout can't inherit
+(`app/.env.local`, `app/.env.test`, `supabase/.env.local`), runs `npm ci` (which re-wires the husky
+hooks), and reserves a free Vite port so two sessions never collide:
+
+```sh
+scripts/new-worktree.sh kiosk-pin                      # → ~/inman-kiosk-pin on feat/kiosk-pin
+scripts/new-worktree.sh receipt-parse --branch fix/receipt-parse --port 5180
+scripts/new-worktree.sh spike --base HEAD --local      # fork from unpushed local work
+scripts/new-worktree.sh kiosk-pin --rm                 # remove the worktree (branch left intact)
+```
+
+Worktrees fork from `origin/<base>` so they start from what's on GitHub; the script warns when your
+local base is ahead. Pass `--local` to fork from the local ref instead (any revision — branch, tag,
+`HEAD`, SHA).
+
+Worktrees land in `$HOME` by default (native WSL filesystem — far faster than `/mnt/c` for
+`node_modules` and file watching); override with `--path` or `$INMAN_WORKTREE_HOME`.
+
+**Local Supabase stays a singleton** across worktrees: it's one Docker stack per machine (keyed on
+`project_id` in `supabase/config.toml`), so only one worktree should run `dev-stack.sh` — the others
+run `npm run dev --prefix app -- --port <reserved> --strictPort` against it, and a `--reset` from
+either wipes shared data.
+
+Playwright picks up the same reserved port automatically (`.dev-port`, then `PLAYWRIGHT_PORT`, then
+5173), so `test:e2e` runs in parallel worktrees stay isolated. `PLAYWRIGHT_PORT` is also the override
+to use in the main checkout, where the default 5173 is black-holed on WSL:
+
+```sh
+PLAYWRIGHT_PORT=5174 npm run test:e2e --prefix app
 ```
 
 Tests: `npm run test` (vitest watch), `npm run test:run` (single pass), `npm run test:e2e` (Playwright; needs real creds in `app/.env.test`, skips without them). Pre-commit runs eslint + `vitest related` on staged files via husky.
