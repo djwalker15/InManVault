@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isImportable, normalizeRaw, toPayloadRows } from './api'
+import { isImportable, normalizeRaw, rowIssues, toPayloadRows } from './api'
 import { toRowState, type ReceiptRow, type RowState } from './types'
 
 const VALID_UNITS = new Set(['count', 'oz', 'kg'])
@@ -46,6 +46,36 @@ describe('isImportable', () => {
     expect(isImportable(row({ quantity: 0 }), VALID_UNITS)).toBe(false)
     expect(isImportable(row({ quantity: null }), VALID_UNITS)).toBe(false)
     expect(isImportable(row({ unit: 'furlong' }), VALID_UNITS)).toBe(false)
+  })
+})
+
+describe('rowIssues', () => {
+  it('is empty for an importable row', () => {
+    expect(rowIssues(row(), VALID_UNITS)).toEqual([])
+  })
+
+  it('names the unknown unit instead of a generic message', () => {
+    expect(rowIssues(row({ unit: 'furlong' }), VALID_UNITS)).toEqual([
+      `Unit "furlong" isn't one we track — pick one.`,
+    ])
+  })
+
+  it('flags a missing unit distinctly from an unknown one', () => {
+    expect(rowIssues(row({ unit: '' }), VALID_UNITS)).toEqual([
+      'No unit found — pick one.',
+    ])
+  })
+
+  it('stacks one message per blocking reason', () => {
+    const issues = rowIssues(
+      row({ quantity: null, unit: '', choice: { kind: 'unresolved' } }),
+      VALID_UNITS,
+    )
+    expect(issues).toEqual([
+      'Enter a quantity above zero.',
+      'No unit found — pick one.',
+      'Pick or create a product to add this line.',
+    ])
   })
 })
 
@@ -111,7 +141,7 @@ describe('toRowState', () => {
     })
   })
 
-  it('leaves ambiguous/new rows unresolved and defaults qty/unit', () => {
+  it('leaves ambiguous/new rows unresolved, defaults qty, and keeps a missing unit blank', () => {
     const state = toRowState(
       serverRow({
         resolution: 'new',
@@ -124,7 +154,8 @@ describe('toRowState', () => {
     )
     expect(state.choice).toEqual({ kind: 'unresolved' })
     expect(state.quantity).toBe(1)
-    expect(state.unit).toBe('count')
+    // No silent 'count' coercion — a blank unit keeps the row in review.
+    expect(state.unit).toBe('')
     expect(state.id).toBe(3)
   })
 })

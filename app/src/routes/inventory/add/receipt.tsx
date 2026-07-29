@@ -6,12 +6,14 @@ import { SignedInLayout } from '@/components/signed-in/signed-in-layout'
 import {
   ImportResultStep,
   type ImportError,
+  type SkippedRow,
 } from '@/components/inventory/import/import-result-step'
 import { ReceiptCaptureStep } from '@/components/inventory/receipt/capture-step'
 import { ReceiptPreviewStep } from '@/components/inventory/receipt/preview-step'
 import {
   isImportable,
   parseReceipt,
+  rowIssues,
   toPayloadRows,
   writeAliases,
 } from '@/components/inventory/receipt/api'
@@ -41,7 +43,7 @@ export default function ReceiptScanPage() {
   const [result, setResult] = useState<{
     imported: number
     errors: ImportError[]
-    skippedLocal: number
+    skippedLocal: SkippedRow[]
   } | null>(null)
 
   // Units validate the per-row unit dropdown. Root space seeds the
@@ -114,8 +116,11 @@ export default function ReceiptScanPage() {
     if (!activeCrewId || !spaceId) return
     const unitSet = new Set(units)
     const payload = toPayloadRows(rows, spaceId, unitSet)
-    const includedCount = rows.filter((r) => r.included).length
-    const skippedLocal = includedCount - payload.length
+    // Keep each dropped row's reasons so the result screen can explain
+    // the skip instead of only counting it.
+    const skippedLocal: SkippedRow[] = rows
+      .filter((r) => r.included && !isImportable(r, unitSet))
+      .map((r) => ({ index: r.id, issues: rowIssues(r, unitSet) }))
     setBusy(true)
     setError(null)
     try {

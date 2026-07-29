@@ -30,7 +30,16 @@ export type ChildResolution =
       /** Produced qty converted into the existing item's unit, or null if cross-category. */
       convertedQty: number | null
     }
-  | { kind: 'create' }
+  | {
+      kind: 'create'
+      /**
+       * Set when an existing item WAS found but its unit can't convert
+       * (cross-category) — the UI explains why it won't merge.
+       */
+      reason?: 'unit-mismatch'
+      existingUnit?: string
+      existingQty?: number
+    }
 
 /** True when every component is measured in a `count`-category unit. */
 export function isAllCount(
@@ -108,8 +117,16 @@ export function resolveChild(
     units,
   )
   // Cross-category mismatch (null) can't merge — fall back to create-new,
-  // same guard as the server.
-  if (convertedQty === null) return { kind: 'create' }
+  // same guard as the server, but keep the existing item's details so the
+  // UI can explain the mismatch instead of a bare "new item".
+  if (convertedQty === null) {
+    return {
+      kind: 'create',
+      reason: 'unit-mismatch',
+      existingUnit: existing.unit,
+      existingQty: existing.quantity,
+    }
+  }
   return {
     kind: 'merge',
     existingUnit: existing.unit,

@@ -11,7 +11,7 @@ import { ProductSearch } from '@/components/inventory/product-search'
 import type { Selection } from '@/components/inventory/types'
 import { SpaceSelect } from '@/components/spaces/space-select'
 import { cn } from '@/lib/utils'
-import { isImportable } from './api'
+import { isImportable, rowIssues } from './api'
 import type { ReceiptCandidate, RowChoice, RowState } from './types'
 
 interface ReceiptPreviewStepProps {
@@ -195,7 +195,8 @@ function RowCard({
   onChoose,
   onOpenSearch,
 }: RowCardProps) {
-  const importable = isImportable(row, unitSet)
+  const issues = rowIssues(row, unitSet)
+  const unitUnknown = !unitSet.has(row.unit)
 
   return (
     <li
@@ -241,10 +242,22 @@ function RowCard({
           <select
             value={row.unit}
             aria-label="Unit"
+            aria-invalid={unitUnknown}
             onChange={(e) => onUpdate({ unit: e.target.value })}
-            className="h-10 rounded-lg bg-paper-50 px-2 font-body text-sm text-ink-900 outline-none focus:bg-paper-250"
+            className={cn(
+              'h-10 rounded-lg px-2 font-body text-sm outline-none focus:bg-paper-250',
+              unitUnknown
+                ? 'bg-red-50 text-red-700'
+                : 'bg-paper-50 text-ink-900',
+            )}
           >
-            {!unitSet.has(row.unit) && <option value={row.unit}>{row.unit}</option>}
+            {unitUnknown && (
+              <option value={row.unit}>
+                {row.unit === ''
+                  ? 'Pick a unit…'
+                  : `${row.unit} — not recognised`}
+              </option>
+            )}
             {validUnits.map((u) => (
               <option key={u} value={u}>
                 {u}
@@ -261,10 +274,14 @@ function RowCard({
         />
       </div>
 
-      {row.included && !importable && (
-        <span className="font-body text-xs text-error">
-          Pick or create a product to add this line.
-        </span>
+      {row.included && issues.length > 0 && (
+        <ul className="flex flex-col gap-0.5">
+          {issues.map((issue) => (
+            <li key={issue} className="font-body text-xs text-error">
+              {issue}
+            </li>
+          ))}
+        </ul>
       )}
     </li>
   )

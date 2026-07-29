@@ -70,7 +70,9 @@ export function toRowState(row: ReceiptRow, id: number): RowState {
     canonicalName: row.canonical_name,
     brand: row.brand,
     quantity: typeof row.quantity === 'number' ? row.quantity : 1,
-    unit: row.unit ?? 'count',
+    // No silent coercion: a missing unit stays blank so isImportable flags
+    // the row for review instead of guessing 'count'.
+    unit: row.unit ?? '',
     unitPrice: typeof row.unit_price === 'number' ? row.unit_price : null,
     choice,
     included: true,

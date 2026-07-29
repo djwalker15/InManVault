@@ -39,6 +39,48 @@ const ANTHROPIC_VERSION = '2023-06-01'
 const MATCH_CONFIDENCE = 0.75
 const CANDIDATE_LIMIT = 5
 
+// Mirrors the unit_definitions seed — the only units the client accepts.
+const KNOWN_UNITS = [
+  'g',
+  'kg',
+  'oz',
+  'lbs',
+  'ml',
+  'L',
+  'tsp',
+  'tbsp',
+  'cup',
+  'fl_oz',
+  'count',
+  'pkg',
+] as const
+
+// Receipts abbreviate units in a handful of predictable ways. Map those to
+// unit_definitions values (label only — never rescale the quantity); pass
+// anything still unknown through untouched so the client flags the row for
+// review instead of silently coercing it.
+const UNIT_ALIASES: Record<string, string> = {
+  ea: 'count',
+  each: 'count',
+  ct: 'count',
+  dz: 'count',
+  lb: 'lbs',
+  gal: 'L',
+  'fl oz': 'fl_oz',
+  floz: 'fl_oz',
+}
+
+function normalizeUnit(raw: string | null | undefined): string | null {
+  const trimmed = raw?.trim()
+  if (!trimmed) return null
+  const lower = trimmed.toLowerCase()
+  const alias = UNIT_ALIASES[lower]
+  if (alias) return alias
+  // Case-insensitive match against the known units (OZ → oz, l → L, …).
+  const known = KNOWN_UNITS.find((u) => u.toLowerCase() === lower)
+  return known ?? trimmed
+}
+
 type Resolution = 'matched' | 'ambiguous' | 'new'
 
 interface RequestBody {
@@ -234,7 +276,7 @@ Deno.serve(async (req) => {
       brand: it.brand ?? null,
       category: it.category ?? null,
       quantity: typeof it.quantity === 'number' ? it.quantity : null,
-      unit: it.unit ?? null,
+      unit: normalizeUnit(it.unit),
       unit_price: typeof it.unit_price === 'number' ? it.unit_price : null,
       candidates,
     }
@@ -324,7 +366,10 @@ const EXTRACT_TOOL = {
             quantity: { type: 'number', description: 'Quantity purchased; default 1.' },
             unit: {
               type: 'string',
-              description: 'Unit if shown (count, lbs, oz, L...). Omit if unclear.',
+              enum: KNOWN_UNITS,
+              description:
+                'Unit if shown, mapped onto one of the listed values. ' +
+                'Omit if unclear.',
             },
             unit_price: {
               type: 'number',
