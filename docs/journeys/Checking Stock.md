@@ -74,6 +74,7 @@ Mini timeline showing recent [[Flow]]s for this item:
 | **Move** | Always | Pick new `current_space_id` from [[Space]] tree. Creates transfer [[Flow]]. | [[Journey - Moving Items]] |
 | **Set home** | When unsorted (`home_space_id` is null) | Pick a home [[Space]]. Updates `home_space_id`. | — |
 | **Put back** | When displaced (home ≠ current) | One-tap: `current_space_id` = `home_space_id`. Creates transfer [[Flow]]. | [[Journey - Moving Items]] |
+| **Use** | When `quantity` > 0 | "Use some" — quantity (smart default: 1 for count units) + optional notes. Creates a consumption [[Flow]] via `record_consumption` (no child row). | — |
 | **Log waste** | Always | Opens waste logging with item pre-selected | [[Journey - Logging Waste]] |
 | **Add to list** | Always | Pick a [[ShoppingList]], set quantity. Creates [[ShoppingListItem]] with `source_type` = manual. | [[Journey - Building a Shopping List]] |
 | **Open** | When the item is a package (`is_package`) with `quantity` ≥ 1 | Opens the break flow — convert sealed packs into child items | [[Journey - Opening a Package]] |
