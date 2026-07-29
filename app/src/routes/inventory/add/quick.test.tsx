@@ -130,6 +130,25 @@ describe('QuickAddPage', () => {
     expect(screen.getByText(/1 item added this session/i)).toBeInTheDocument()
   })
 
+  it('explains what is missing on submit instead of silently disabling', async () => {
+    const sb = makeSupabaseMock({ ...crewMembers, ...spaces, ...units })
+    renderWithRouter(<QuickAddPage />)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Location')).toHaveValue('p')
+    })
+    // No product typed or picked yet — the CTA stays tappable and explains.
+    const submit = screen.getByRole('button', { name: /add to inventory/i })
+    expect(submit).toBeEnabled()
+    fireEvent.click(submit)
+    await waitFor(() => {
+      expect(
+        screen.getByText('Type or pick a product first.'),
+      ).toBeInTheDocument()
+    })
+    expect(sb.rpc).not.toHaveBeenCalled()
+  })
+
   it('uses a chosen catalog product without creating a new one', async () => {
     const sb = makeSupabaseMock(
       {

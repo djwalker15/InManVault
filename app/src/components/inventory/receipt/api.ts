@@ -24,17 +24,35 @@ export async function parseReceipt(
 }
 
 /**
- * Whether a row can be imported. A row needs a positive quantity, a known
- * unit, and an explicit resolution (a picked product or a create-new name) —
- * `unresolved` rows are intentionally blocked.
+ * Everything blocking a row from import, as user-facing messages. A row
+ * needs a positive quantity, a known unit, and an explicit resolution (a
+ * picked product or a create-new name) — `unresolved` rows are
+ * intentionally blocked.
  */
+export function rowIssues(row: RowState, validUnits: Set<string>): string[] {
+  const issues: string[] = []
+  if (row.quantity === null || !(row.quantity > 0)) {
+    issues.push('Enter a quantity above zero.')
+  }
+  if (!row.unit) {
+    issues.push('No unit found — pick one.')
+  } else if (!validUnits.has(row.unit)) {
+    issues.push(`Unit "${row.unit}" isn't one we track — pick one.`)
+  }
+  if (row.choice.kind === 'unresolved') {
+    issues.push('Pick or create a product to add this line.')
+  } else if (
+    row.choice.kind === 'create' &&
+    row.choice.name.trim().length === 0
+  ) {
+    issues.push('Name the new product to add this line.')
+  }
+  return issues
+}
+
+/** Whether a row can be imported (included and free of issues). */
 export function isImportable(row: RowState, validUnits: Set<string>): boolean {
-  if (!row.included) return false
-  if (row.quantity === null || !(row.quantity > 0)) return false
-  if (!row.unit || !validUnits.has(row.unit)) return false
-  if (row.choice.kind === 'product') return true
-  if (row.choice.kind === 'create') return row.choice.name.trim().length > 0
-  return false
+  return row.included && rowIssues(row, validUnits).length === 0
 }
 
 /** Build the bulk_import_inventory payload for the importable rows. */

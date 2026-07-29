@@ -7,6 +7,7 @@ import { ColumnMapStep } from '@/components/inventory/import/column-map-step'
 import {
   ImportResultStep,
   type ImportError,
+  type SkippedRow,
 } from '@/components/inventory/import/import-result-step'
 import { PreviewStep } from '@/components/inventory/import/preview-step'
 import { UploadStep } from '@/components/inventory/import/upload-step'
@@ -55,7 +56,7 @@ export default function BulkImportPage() {
   const [result, setResult] = useState<{
     imported: number
     errors: ImportError[]
-    skippedLocal: number
+    skippedLocal: SkippedRow[]
   } | null>(null)
 
   // Units power the default-unit dropdown and resolution validation.
@@ -193,7 +194,11 @@ export default function BulkImportPage() {
   async function handleImport() {
     if (!activeCrewId) return
     const valid = resolved.filter((r) => r.valid)
-    const skippedLocal = resolved.length - valid.length
+    // Keep each dropped row's reasons so the result screen can explain
+    // the skip instead of only counting it.
+    const skippedLocal: SkippedRow[] = resolved
+      .filter((r) => !r.valid)
+      .map((r) => ({ index: r.index, issues: r.issues }))
     setBusy(true)
     setError(null)
     try {

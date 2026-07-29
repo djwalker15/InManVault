@@ -6,11 +6,17 @@ export interface ImportError {
   message: string
 }
 
+/** A row dropped before the RPC (failed local validation), with reasons. */
+export interface SkippedRow {
+  index: number
+  issues: string[]
+}
+
 interface ImportResultStepProps {
   imported: number
   errors: ImportError[]
   /** Rows dropped before the RPC (failed local validation). */
-  skippedLocal: number
+  skippedLocal: SkippedRow[]
   onDone: () => void
   onAnother: () => void
   /** Label for the secondary "start over" action. */
@@ -25,7 +31,7 @@ export function ImportResultStep({
   onAnother,
   anotherLabel = 'Import another file',
 }: ImportResultStepProps) {
-  const skipped = skippedLocal + errors.length
+  const skipped = skippedLocal.length + errors.length
 
   return (
     <div className="flex flex-col gap-4">
@@ -48,15 +54,23 @@ export function ImportResultStep({
         </div>
       </div>
 
-      {errors.length > 0 && (
+      {skipped > 0 && (
         <div className="flex flex-col gap-2">
           <h2 className="font-display text-sm font-bold uppercase tracking-[0.35px] text-ink-900">
             Skipped rows
           </h2>
           <ul className="flex flex-col gap-1">
+            {skippedLocal.map((s) => (
+              <li
+                key={`local-${s.index}`}
+                className="rounded-lg bg-paper-100 px-3 py-2 font-body text-xs text-ink-700"
+              >
+                Row {s.index + 1}: {s.issues.join(' ')}
+              </li>
+            ))}
             {errors.map((e) => (
               <li
-                key={e.index}
+                key={`rpc-${e.index}`}
                 className="rounded-lg bg-paper-100 px-3 py-2 font-body text-xs text-ink-700"
               >
                 Row {e.index + 1}: {e.message}

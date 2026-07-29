@@ -596,6 +596,12 @@ function PreviewStep({
                       </span>
                     )}
                 </p>
+              ) : resolution.reason === 'unit-mismatch' ? (
+                <p className="font-body text-xs text-ink-600">
+                  + New item — can’t merge into the existing{' '}
+                  {formatQuantity(resolution.existingQty ?? 0)}{' '}
+                  {resolution.existingUnit}
+                </p>
               ) : (
                 <p className="font-body text-xs text-ink-600">+ New item</p>
               )}

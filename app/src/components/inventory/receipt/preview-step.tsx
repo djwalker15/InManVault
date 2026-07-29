@@ -11,7 +11,7 @@ import { ProductSearch } from '@/components/inventory/product-search'
 import type { Selection } from '@/components/inventory/types'
 import { SpaceSelect } from '@/components/spaces/space-select'
 import { cn } from '@/lib/utils'
-import { isImportable } from './api'
+import { isImportable, rowIssues } from './api'
 import type { ReceiptCandidate, RowChoice, RowState } from './types'
 
 interface ReceiptPreviewStepProps {
@@ -48,6 +48,8 @@ export function ReceiptPreviewStep({
 }: ReceiptPreviewStepProps) {
   // Which row's "search catalog" sheet is open (null = none).
   const [searchRowId, setSearchRowId] = useState<number | null>(null)
+  // Why the last import tap was blocked (null = not blocked).
+  const [blockedMessage, setBlockedMessage] = useState<string | null>(null)
   const unitSet = new Set(validUnits)
 
   function update(id: number, patch: Partial<RowState>) {
@@ -61,7 +63,29 @@ export function ReceiptPreviewStep({
   const included = rows.filter((r) => r.included)
   const ready = included.filter((r) => isImportable(r, unitSet))
   const unresolved = included.length - ready.length
-  const canImport = !importing && ready.length > 0 && unresolved === 0 && !!spaceId
+
+  // Explain why the import can't run instead of silently disabling the
+  // CTA (a disabled-only gate reads as a dead button).
+  function handleImportClick() {
+    if (!spaceId) {
+      setBlockedMessage('Pick a space to shelve these items.')
+      return
+    }
+    if (ready.length === 0) {
+      setBlockedMessage('Nothing to add yet — include at least one line.')
+      return
+    }
+    if (unresolved > 0) {
+      setBlockedMessage(
+        unresolved === 1
+          ? '1 line still needs review — fix or exclude it above.'
+          : `${unresolved} lines still need review — fix or exclude them above.`,
+      )
+      return
+    }
+    setBlockedMessage(null)
+    onImport()
+  }
 
   const searchRow = rows.find((r) => r.id === searchRowId) ?? null
 
@@ -96,12 +120,21 @@ export function ReceiptPreviewStep({
         ))}
       </ul>
 
+      {blockedMessage && (
+        <p
+          role="alert"
+          className="rounded-md bg-red-50 px-3 py-2 font-body text-sm text-red-700"
+        >
+          {blockedMessage}
+        </p>
+      )}
+
       <CtaTray sticky={false}>
         <PrimaryButton
           arrow
           type="button"
-          disabled={!canImport}
-          onClick={onImport}
+          disabled={importing}
+          onClick={handleImportClick}
         >
           {importing
             ? 'Adding…'
@@ -162,7 +195,8 @@ function RowCard({
   onChoose,
   onOpenSearch,
 }: RowCardProps) {
-  const importable = isImportable(row, unitSet)
+  const issues = rowIssues(row, unitSet)
+  const unitUnknown = !unitSet.has(row.unit)
 
   return (
     <li
@@ -208,10 +242,22 @@ function RowCard({
           <select
             value={row.unit}
             aria-label="Unit"
+            aria-invalid={unitUnknown}
             onChange={(e) => onUpdate({ unit: e.target.value })}
-            className="h-10 rounded-lg bg-paper-50 px-2 font-body text-sm text-ink-900 outline-none focus:bg-paper-250"
+            className={cn(
+              'h-10 rounded-lg px-2 font-body text-sm outline-none focus:bg-paper-250',
+              unitUnknown
+                ? 'bg-red-50 text-red-700'
+                : 'bg-paper-50 text-ink-900',
+            )}
           >
-            {!unitSet.has(row.unit) && <option value={row.unit}>{row.unit}</option>}
+            {unitUnknown && (
+              <option value={row.unit}>
+                {row.unit === ''
+                  ? 'Pick a unit…'
+                  : `${row.unit} — not recognised`}
+              </option>
+            )}
             {validUnits.map((u) => (
               <option key={u} value={u}>
                 {u}
@@ -228,10 +274,14 @@ function RowCard({
         />
       </div>
 
-      {row.included && !importable && (
-        <span className="font-body text-xs text-error">
-          Pick or create a product to add this line.
-        </span>
+      {row.included && issues.length > 0 && (
+        <ul className="flex flex-col gap-0.5">
+          {issues.map((issue) => (
+            <li key={issue} className="font-body text-xs text-error">
+              {issue}
+            </li>
+          ))}
+        </ul>
       )}
     </li>
   )

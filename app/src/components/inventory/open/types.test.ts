@@ -98,7 +98,7 @@ describe('resolveChild', () => {
     }
   })
 
-  it('falls back to create-new on a cross-category mismatch', () => {
+  it('falls back to create-new on a cross-category mismatch, keeping the existing details', () => {
     const weightLine: ComponentLine = {
       componentProductId: 'flour',
       name: 'Flour',
@@ -107,6 +107,11 @@ describe('resolveChild', () => {
     }
     // Existing item is in ml (volume) — can't convert from kg (weight).
     const r = resolveChild(weightLine, 1, { unit: 'ml', quantity: 100 }, units)
-    expect(r.kind).toBe('create')
+    expect(r).toEqual({
+      kind: 'create',
+      reason: 'unit-mismatch',
+      existingUnit: 'ml',
+      existingQty: 100,
+    })
   })
 })

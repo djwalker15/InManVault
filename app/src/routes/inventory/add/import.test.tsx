@@ -98,7 +98,7 @@ describe('BulkImportPage', () => {
     )
   })
 
-  it('marks rows with an unknown unit as skipped in the preview', async () => {
+  it('marks rows with an unknown unit as skipped and explains why in the result', async () => {
     makeSupabaseMock(baseTables, {
       bulk_import_inventory: { data: { imported: 1, errors: [] }, error: null },
     })
@@ -120,5 +120,15 @@ describe('BulkImportPage', () => {
       expect(screen.getByText(/1 ready to import/i)).toBeInTheDocument()
     })
     expect(screen.getByText(/1 will be skipped/i)).toBeInTheDocument()
+
+    // Import the good row; the result step names the skipped row's issue
+    // instead of only counting it.
+    fireEvent.click(screen.getByRole('button', { name: /import 1 item/i }))
+    await waitFor(() => {
+      expect(screen.getByText(/imported 1 item/i)).toBeInTheDocument()
+    })
+    expect(
+      screen.getByText(/row 2: unit "furlong" is not recognized/i),
+    ).toBeInTheDocument()
   })
 })
