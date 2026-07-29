@@ -11,7 +11,9 @@ Logging waste captures what was lost, how much, why, and the context surrounding
 
 The flow is **flexible in ordering** — it works whether the user starts with the item (most common) or the reason (e.g., "something just spilled"). Every entry point pre-fills whatever context is already known, and the form adapts to collect the rest.
 
-Each waste log is **atomic via edge function**: waste [[Flow]] + [[WasteEvent]] + reason-specific detail record all created in one transaction, with the cached quantity on [[InventoryItem]] updated and a confirmation step before committing.
+Each waste log is **atomic** — waste [[Flow]] + [[WasteEvent]] + reason-specific detail record in one transaction, with the cached quantity on [[InventoryItem]] updated. Shipped as the `record_waste` plpgsql RPC (the planned `log_waste` edge function was superseded by repo RPC precedent — see [[Feature 6 - Waste Tracking]] §Implementation Status).
+
+> **v1 scope (shipped 2026-07):** entry point is the Checking Stock inline action only — item pre-selected, quantity with smart default, six-reason picker with reason-specific fields, cost preview, deduct copy on the submit button. The dedicated waste page, batch-failure entry point, kiosk entry, and photo capture land later; the detail-row `space_id` defaults server-side to the item's current space.
 
 ---
 

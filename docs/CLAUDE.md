@@ -455,6 +455,7 @@ Adding Inventory (product resolution, atomic `record_purchase` RPC, restock sub-
 - `bulk_import_inventory` — atomic-per-row import (spreadsheet **and** receipt scan); `p_source` tags Flow provenance (`bulk_import` / `receipt_scan`); creates Product + InventoryItem + Flow + FlowPurchaseDetail (with `unit_cost`) per row
 - `record_adjustment` — single-item physical-count correction: adjustment Flow (abs delta — `flows.quantity` is checked `>= 0`) + FlowAdjustmentDetail (`physical_count`; direction = actual − expected); admin/owner-gated, row-locked. The Inventory Audit journey will reuse it with `audit_session_id`.
 - `record_consumption` — the Checking Stock "Use it" action: consumption Flow, no child detail table; member-gated, row-locked, capped at on-hand quantity.
+- `record_waste` — atomic waste logging (v1.1): waste Flow + slim WasteEvent + one reason-specific detail row from a `p_details` jsonb payload; `total_cost` from `last_unit_cost`; member-gated, row-locked, capped at on-hand. Supersedes the planned `log_waste` edge function.
 - `search_products_fuzzy` — trigram-ranked catalog candidates over the `products.name` GIN index; used by `parse-receipt` for line resolution and reusable by the product picker
 
 ### Edge Functions (MVP)
@@ -464,7 +465,8 @@ Adding Inventory (product resolution, atomic `record_purchase` RPC, restock sub-
 - `parse-receipt` — receipt/invoice scan ([[Journey - Adding Inventory]] Method 5). Claude vision extracts line items, then resolves each to a [[Product]] via [[ProductAlias]] lookup → `search_products_fuzzy` → Claude disambiguation. Returns resolved rows; the client gates ambiguous/new lines behind an explicit pick/create, then commits via `bulk_import_inventory`. `ANTHROPIC_API_KEY` lives only here.
 
 ### Post-MVP Edge Functions (identified)
-- `log_waste` (v1.1), `complete_batch` (v1.2), `checkout_shopping_trip` (v1.3), `complete_intake_session` (v1.3), `kiosk_action_router` (v1.4), `run_reconciliation` (v1.5)
+- ~~`log_waste` (v1.1)~~ — shipped as the `record_waste` RPC (see Database RPC Functions above)
+- `complete_batch` (v1.2), `checkout_shopping_trip` (v1.3), `complete_intake_session` (v1.3), `kiosk_action_router` (v1.4), `run_reconciliation` (v1.5)
 - `open_package` — atomic plpgsql RPC (same shape as `record_purchase` / checkout): PackageBreakEvent + `package_break` out-Flow + N resolved `package_yield` in-Flows + per-leg FlowPackageBreakDetail + child `last_unit_cost`, asserting cost conservation
 
 ---

@@ -23,6 +23,7 @@ const baseProps = {
   homeSpaceId: null as string | null,
   unit: 'count',
   quantity: 1,
+  lastUnitCost: null as number | null,
   isPackage: false,
   category_id: null as string | null,
   min_stock: null as number | null,
@@ -47,10 +48,11 @@ describe('RowActions', () => {
     expect(
       screen.queryByRole('button', { name: /put back/i }),
     ).toBeNull()
-    // Stub buttons
+    // Log waste is live (disabled only at zero quantity)
     expect(
       screen.getByRole('button', { name: /log waste/i }),
-    ).toBeDisabled()
+    ).toBeEnabled()
+    // Remaining stub button
     expect(
       screen.getByRole('button', { name: /add to list/i }),
     ).toBeDisabled()
@@ -212,6 +214,39 @@ describe('RowActions', () => {
     makeSupabaseMock({ spaces: { select: { data: sampleSpaces, error: null } } })
     renderRA(<RowActions {...baseProps} quantity={0} />)
     expect(screen.getByRole('button', { name: /^use$/i })).toBeDisabled()
+  })
+
+  it('Log waste opens the waste form and calls record_waste', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    const onChanged = vi.fn()
+    const sb = makeSupabaseMock(
+      { spaces: { select: { data: sampleSpaces, error: null } } },
+      { record_waste: { data: 'flow_w', error: null } },
+    )
+    renderRA(
+      <RowActions
+        {...baseProps}
+        quantity={3}
+        expiry_date="2026-07-01"
+        onChanged={onChanged}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /log waste/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /log waste — deducts 1 count/i }),
+    )
+    await waitFor(() => {
+      expect(sb.rpc).toHaveBeenCalledWith(
+        'record_waste',
+        expect.objectContaining({
+          p_inventory_item_id: 'item_1',
+          p_quantity: 1,
+          p_waste_reason: 'expired',
+          p_details: { expiry_date: '2026-07-01', was_opened: false },
+        }),
+      )
+    })
+    expect(onChanged).toHaveBeenCalled()
   })
 
   it('Adjust opens the count form and calls record_adjustment', async () => {

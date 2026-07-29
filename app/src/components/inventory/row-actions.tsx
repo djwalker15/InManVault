@@ -21,8 +21,17 @@ import { SpaceSelect } from '@/components/spaces/space-select'
 import { useSupabase } from '@/lib/supabase'
 import { AdjustForm } from './adjust-form'
 import { ConsumeForm } from './consume-form'
+import { WasteForm } from './waste-form'
 
-type Action = 'move' | 'set-home' | 'put-back' | 'edit' | 'adjust' | 'use' | null
+type Action =
+  | 'move'
+  | 'set-home'
+  | 'put-back'
+  | 'edit'
+  | 'adjust'
+  | 'use'
+  | 'waste'
+  | null
 
 interface RowActionsProps {
   crewId: string
@@ -31,6 +40,7 @@ interface RowActionsProps {
   homeSpaceId: string | null
   unit: string
   quantity: number
+  lastUnitCost: number | null
   /** Whether this item's product is a package (can be opened). */
   isPackage: boolean
   category_id: string | null
@@ -56,6 +66,7 @@ export function RowActions({
   homeSpaceId,
   unit,
   quantity,
+  lastUnitCost,
   isPackage,
   category_id,
   min_stock,
@@ -187,8 +198,14 @@ export function RowActions({
         <ActionButton
           icon={<Trash2 size={14} />}
           label="Log waste"
-          disabled
-          title="Coming with the Waste journey (Phase 4 follow-up)"
+          active={action === 'waste'}
+          disabled={quantity <= 0}
+          title={
+            quantity <= 0
+              ? 'Nothing on hand to waste.'
+              : 'Record a loss — deducts from inventory'
+          }
+          onClick={() => setAction(action === 'waste' ? null : 'waste')}
         />
         <ActionButton
           icon={<ShoppingCart size={14} />}
@@ -218,6 +235,24 @@ export function RowActions({
         <SetHomeForm
           crewId={crewId}
           inventoryItemId={inventoryItemId}
+          busy={busy}
+          setBusy={setBusy}
+          setError={setError}
+          onCancel={close}
+          onSaved={() => {
+            onChanged()
+            close()
+          }}
+        />
+      )}
+
+      {action === 'waste' && (
+        <WasteForm
+          inventoryItemId={inventoryItemId}
+          unit={unit}
+          quantity={quantity}
+          lastUnitCost={lastUnitCost}
+          expiryDate={expiry_date}
           busy={busy}
           setBusy={setBusy}
           setError={setError}
