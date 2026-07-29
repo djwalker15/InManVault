@@ -233,6 +233,7 @@ export function InventoryRowDetails(props: InventoryRowDetailsProps) {
           homeSpaceId={props.homeSpaceId ?? null}
           unit={props.unit}
           quantity={props.quantity}
+          lastUnitCost={props.lastUnitCost}
           isPackage={props.isPackage ?? false}
           category_id={props.categoryId ?? null}
           min_stock={props.minStock}
