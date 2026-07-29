@@ -453,6 +453,7 @@ Adding Inventory (product resolution, atomic `record_purchase` RPC, restock sub-
 - `create_crew_with_owner` — insert Crew + CrewMember
 - `accept_invite` — update Invite + insert CrewMember
 - `bulk_import_inventory` — atomic-per-row import (spreadsheet **and** receipt scan); `p_source` tags Flow provenance (`bulk_import` / `receipt_scan`); creates Product + InventoryItem + Flow + FlowPurchaseDetail (with `unit_cost`) per row
+- `record_adjustment` — single-item physical-count correction: adjustment Flow (abs delta — `flows.quantity` is checked `>= 0`) + FlowAdjustmentDetail (`physical_count`; direction = actual − expected); admin/owner-gated, row-locked. The Inventory Audit journey will reuse it with `audit_session_id`.
 - `search_products_fuzzy` — trigram-ranked catalog candidates over the `products.name` GIN index; used by `parse-receipt` for line resolution and reusable by the product picker
 
 ### Edge Functions (MVP)
@@ -501,7 +502,7 @@ Full index with statuses, dependencies, and entity frequency: `inman-vault/InMan
 ### Day-to-Day Inventory (4 journeys)
 - **Adding Inventory** — Four methods: manual search/create (two-step: product resolution → inventory details), bulk import (spreadsheet upload with column mapping), barcode scan (continuous mode), quick add (minimal fields). Search shows master catalog + existing inventory (restock or add another). Stay-in-flow.
 - **Moving Items** — Five scenarios: single move (immediate Flow), put-back routine (batch displaced items), set home locations (batch unsorted), bulk reassign with preview (Space to Space, optionally updates home), reorganize (space-centric or item-centric).
-- **Checking Stock** — Search-first with real-time filtering. Browse by Space or Category. Three filters (category, space, stock status). Inline expansion with detail + recent activity. Seven inline actions (restock, move, set home, put back, log waste, add to list, edit). Alerts summary with dashboard widget.
+- **Checking Stock** — Search-first with real-time filtering. Browse by Space or Category. Three filters (category, space, stock status). Inline expansion with detail + recent activity. Eight inline actions (restock, move, set home, put back, log waste, add to list, edit, adjust count). Alerts summary with dashboard widget.
 - **Intake Session** — Session-based batch receiving (replaces Restocking + Post-Shopping Intake). Two modes: batch table (list-seeded, discrepancy tracking) and sequential (from-scratch). Deferred shelving. Atomic completion via edge function. Persisted IntakeSession + IntakeSessionItem entities.
 
 ### Waste (4 journeys, 1 absorbed)

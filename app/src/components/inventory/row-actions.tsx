@@ -7,6 +7,7 @@ import {
   PackageOpen,
   RotateCcw,
   ShoppingCart,
+  SlidersHorizontal,
   Trash2,
 } from 'lucide-react'
 import {
@@ -17,8 +18,9 @@ import {
 } from '@/components/ds'
 import { SpaceSelect } from '@/components/spaces/space-select'
 import { useSupabase } from '@/lib/supabase'
+import { AdjustForm } from './adjust-form'
 
-type Action = 'move' | 'set-home' | 'put-back' | 'edit' | null
+type Action = 'move' | 'set-home' | 'put-back' | 'edit' | 'adjust' | null
 
 interface RowActionsProps {
   crewId: string
@@ -162,6 +164,13 @@ export function RowActions({
           onClick={() => setAction(action === 'edit' ? null : 'edit')}
         />
         <ActionButton
+          icon={<SlidersHorizontal size={14} />}
+          label="Adjust"
+          active={action === 'adjust'}
+          title="Correct the count to match what's actually there"
+          onClick={() => setAction(action === 'adjust' ? null : 'adjust')}
+        />
+        <ActionButton
           icon={<Trash2 size={14} />}
           label="Log waste"
           disabled
@@ -195,6 +204,22 @@ export function RowActions({
         <SetHomeForm
           crewId={crewId}
           inventoryItemId={inventoryItemId}
+          busy={busy}
+          setBusy={setBusy}
+          setError={setError}
+          onCancel={close}
+          onSaved={() => {
+            onChanged()
+            close()
+          }}
+        />
+      )}
+
+      {action === 'adjust' && (
+        <AdjustForm
+          inventoryItemId={inventoryItemId}
+          unit={unit}
+          quantity={quantity}
           busy={busy}
           setBusy={setBusy}
           setError={setError}
