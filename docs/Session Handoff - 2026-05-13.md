@@ -1,5 +1,7 @@
 # Session Handoff — 2026-05-13
 
+> ⚠️ **Superseded by [[Session Handoff - 2026-07-29]]** — kept for history; read the newer note instead.
+
 > Snapshot for the next Claude session picking up the InMan app. Read this
 > after `docs/CLAUDE.md` and `docs/InMan Implementation Plan.md` — those
 > are the authoritative product/architecture briefs; this doc is the thin

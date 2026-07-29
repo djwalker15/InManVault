@@ -1,6 +1,6 @@
 # Feature 12 — Inventory Item Composition (Packages)
 
-> **Status:** Break-wizard slice implemented (June 25, 2026) — ClickUp [86e1wd01b](https://app.clickup.com/t/86e1wd01b).
+> **Status:** Break-wizard slice implemented (June 25, 2026); merged to dev 2026-07-29 via PR #36 — ClickUp [86e1wd01b](https://app.clickup.com/t/86e1wd01b).
 > This note is the **data-modeling design record**. The companion Claude Design session builds the UI on top of it. **Documentation propagation is complete** (entity notes, ERD, `docs/CLAUDE.md`, indexes — see [[#Implementation propagation checklist]]). The schema (3 tables, 2 flow types, `is_package`, cache arms, `open_package` RPC) and the **break wizard** (the [[Journey - Opening a Package]] open flow) are built; the **catalog-side composition editor** (mark-as-package toggle + `product_components` authoring UI) is the remaining follow-up — packages are seeded via SQL for now.
 
 ## Problem
@@ -144,9 +144,9 @@ The screens the design session needs to cover:
 - [x] Index updates: [[InMan Data Model]] (entity TOC, feature list, decision), [[InMan User Journeys]] (status, dependency graph, entity-frequency); [[Cost Data Flow]]; [[Feature 3 - Item Catalog]]; [[Journey - Checking Stock]] "Open" action.
 - [x] Journey [[Journey - Opening a Package]] fleshed out for UI design + implementation (catalog authoring, UI states, history, kiosk, microcopy, open questions).
 
-**Schema — done (June 25, 2026):**
+**Schema — done (June 25, 2026; merged to dev 2026-07-29 via PR #36):**
 
-- [x] Migrations: `20260625120000_package_composition_enums.sql` (flow_type `package_break`/`package_yield` + `package_break_role`), `20260625120100_package_composition_slice.sql` (`products.is_package`, `product_components`, `package_break_events`, `flow_package_break_details`, RLS + immutability triggers, cache-trigger arms), `20260625120200_open_package_rpc.sql` (the atomic `open_package` RPC).
+- [x] Migrations: `20260625120000_package_composition_enums.sql` (flow_type `package_break`/`package_yield` + `package_break_role`), `20260625120100_package_composition_slice.sql` (`products.is_package`, `product_components`, `package_break_events`, `flow_package_break_details`, RLS + immutability triggers, cache-trigger arms), `20260625120200_open_package_rpc.sql` (the atomic `open_package` RPC). Merged to dev 2026-07-29 (PR #36); verified applied on staging.
 
 **Frontend — done (break wizard):**
 
