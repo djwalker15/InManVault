@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  Archive,
   Edit3,
   Home,
   MoveRight,
@@ -31,6 +32,7 @@ type Action =
   | 'adjust'
   | 'use'
   | 'waste'
+  | 'remove'
   | null
 
 interface RowActionsProps {
@@ -213,6 +215,13 @@ export function RowActions({
           disabled
           title="Coming with the Shopping journey"
         />
+        <ActionButton
+          icon={<Archive size={14} />}
+          label="Remove"
+          active={action === 'remove'}
+          title="Remove this item from inventory (history stays in the ledger)"
+          onClick={() => setAction(action === 'remove' ? null : 'remove')}
+        />
       </div>
 
       {action === 'move' && (
@@ -235,6 +244,22 @@ export function RowActions({
         <SetHomeForm
           crewId={crewId}
           inventoryItemId={inventoryItemId}
+          busy={busy}
+          setBusy={setBusy}
+          setError={setError}
+          onCancel={close}
+          onSaved={() => {
+            onChanged()
+            close()
+          }}
+        />
+      )}
+
+      {action === 'remove' && (
+        <RemoveForm
+          inventoryItemId={inventoryItemId}
+          unit={unit}
+          quantity={quantity}
           busy={busy}
           setBusy={setBusy}
           setError={setError}
@@ -492,6 +517,95 @@ function SetHomeForm({
           onClick={() => void handleSubmit()}
         >
           {busy ? 'Saving…' : 'Save home'}
+        </PrimaryButton>
+        <TextButton type="button" onClick={onCancel}>
+          Cancel
+        </TextButton>
+      </CtaTray>
+    </div>
+  )
+}
+
+interface RemoveFormProps {
+  inventoryItemId: string
+  unit: string
+  quantity: number
+  busy: boolean
+  setBusy: (b: boolean) => void
+  setError: (e: string | null) => void
+  onCancel: () => void
+  onSaved: () => void
+}
+
+/**
+ * Soft-deletes the item via the admin/owner-gated
+ * soft_delete_inventory_item RPC (a direct deleted_at update trips the
+ * RLS SELECT trap). Two-step: the confirm button only arms after the
+ * panel opens, with explicit copy about the zero-out adjustment.
+ */
+function RemoveForm({
+  inventoryItemId,
+  unit,
+  quantity,
+  busy,
+  setBusy,
+  setError,
+  onCancel,
+  onSaved,
+}: RemoveFormProps) {
+  const supabase = useSupabase()
+  const [reason, setReason] = useState('')
+
+  async function handleSubmit() {
+    setBusy(true)
+    setError(null)
+    try {
+      const { error: rpcError } = await supabase.rpc(
+        'soft_delete_inventory_item',
+        {
+          p_inventory_item_id: inventoryItemId,
+          p_reason: reason.trim() || null,
+        },
+      )
+      if (rpcError) throw rpcError
+      onSaved()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <span className="font-display text-[10px] font-bold uppercase tracking-[0.55px] text-ink-300">
+        Remove from inventory
+      </span>
+      <p className="font-body text-sm text-ink-700">
+        Removes this item from your inventory. Its history stays in the
+        ledger.
+        {quantity !== 0 && (
+          <>
+            {' '}
+            The remaining <strong>{quantity} {unit}</strong> will be zeroed
+            out with an adjustment.
+          </>
+        )}
+      </p>
+      <Field
+        label="REASON (OPTIONAL)"
+        placeholder="no longer stocking this"
+        value={reason}
+        onValueChange={setReason}
+      />
+      <CtaTray sticky={false}>
+        <PrimaryButton
+          arrow
+          type="button"
+          disabled={busy}
+          onClick={() => void handleSubmit()}
+        >
+          {busy ? 'Removing…' : 'Remove item'}
         </PrimaryButton>
         <TextButton type="button" onClick={onCancel}>
           Cancel

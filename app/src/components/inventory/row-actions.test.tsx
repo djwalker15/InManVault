@@ -38,7 +38,10 @@ describe('RowActions', () => {
     mockClerk({ user: { id: 'user_1' } })
     makeSupabaseMock({ spaces: { select: { data: sampleSpaces, error: null } } })
     renderRA(<RowActions {...baseProps} />)
-    expect(screen.getByRole('button', { name: /move/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^move$/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /^remove$/i }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^edit$/i })).toBeInTheDocument()
     // Set home shows when home is null (unsorted)
     expect(
@@ -272,6 +275,54 @@ describe('RowActions', () => {
       })
     })
     expect(onChanged).toHaveBeenCalled()
+  })
+
+  it('Remove requires the confirm panel and calls soft_delete_inventory_item', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    const onChanged = vi.fn()
+    const sb = makeSupabaseMock(
+      { spaces: { select: { data: sampleSpaces, error: null } } },
+      { soft_delete_inventory_item: { data: null, error: null } },
+    )
+    renderRA(<RowActions {...baseProps} quantity={3} onChanged={onChanged} />)
+    // No RPC before the confirm step
+    fireEvent.click(screen.getByRole('button', { name: /^remove$/i }))
+    expect(sb.rpc).not.toHaveBeenCalled()
+    expect(
+      screen.getByText(/will be zeroed out with an adjustment/i),
+    ).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText(/reason/i), {
+      target: { value: 'no longer stocking' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^remove item$/i }))
+    await waitFor(() => {
+      expect(sb.rpc).toHaveBeenCalledWith('soft_delete_inventory_item', {
+        p_inventory_item_id: 'item_1',
+        p_reason: 'no longer stocking',
+      })
+    })
+    expect(onChanged).toHaveBeenCalled()
+  })
+
+  it('Remove surfaces the RPC error for non-admins', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    makeSupabaseMock(
+      { spaces: { select: { data: sampleSpaces, error: null } } },
+      {
+        soft_delete_inventory_item: {
+          data: null,
+          error: new Error('Only crew admins or the owner can remove items'),
+        },
+      },
+    )
+    renderRA(<RowActions {...baseProps} />)
+    fireEvent.click(screen.getByRole('button', { name: /^remove$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^remove item$/i }))
+    await waitFor(() => {
+      expect(
+        screen.getByText('Only crew admins or the owner can remove items'),
+      ).toBeInTheDocument()
+    })
   })
 
   it('hides Open for non-package items', () => {

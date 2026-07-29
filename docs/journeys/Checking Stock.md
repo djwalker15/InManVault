@@ -80,6 +80,7 @@ Mini timeline showing recent [[Flow]]s for this item:
 | **Open** | When the item is a package (`is_package`) with `quantity` ≥ 1 | Opens the break flow — convert sealed packs into child items | [[Journey - Opening a Package]] |
 | **Edit** | Always | Edit [[InventoryItem]] fields (min_stock, expiry, notes, category override) — quantity changes go through Restock / Adjust, never edit | — |
 | **Adjust** | Always (RPC enforces admin/owner) | Physical-count correction: enter the actual count, `record_adjustment` writes an adjustment [[Flow]] + [[FlowAdjustmentDetail]] | [[Journey - Inventory Audit]] |
+| **Remove** | Always (RPC enforces admin/owner) | Two-step confirm → `soft_delete_inventory_item` (zero-out adjustment when quantity ≠ 0, then `deleted_at`) | [[Journey - Removing an Inventory Item]] |
 
 Actions that create [[Flow]]s show a brief success toast and update the expanded detail card in place.
 

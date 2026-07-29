@@ -72,6 +72,8 @@ All mutable entities use soft deletes via `deleted_at` (timestamp, nullable). No
 
 Active queries always filter `WHERE deleted_at IS NULL`. RLS policies include the same filter.
 
+Because the SELECT policy hides soft-deleted rows, client-side `UPDATE … SET deleted_at` calls trip the RLS RETURNING trap — soft deletes route through SECURITY DEFINER RPCs (`cascade_soft_delete_spaces`, `delete_space_with_items`, `soft_delete_inventory_item`).
+
 ### Atomic Operations via Edge Functions
 
 Multi-step operations that must fully succeed or fully roll back are implemented as **Supabase edge functions** (TypeScript) wrapping database transactions:
@@ -456,6 +458,7 @@ Adding Inventory (product resolution, atomic `record_purchase` RPC, restock sub-
 - `record_adjustment` — single-item physical-count correction: adjustment Flow (abs delta — `flows.quantity` is checked `>= 0`) + FlowAdjustmentDetail (`physical_count`; direction = actual − expected); admin/owner-gated, row-locked. The Inventory Audit journey will reuse it with `audit_session_id`.
 - `record_consumption` — the Checking Stock "Use it" action: consumption Flow, no child detail table; member-gated, row-locked, capped at on-hand quantity.
 - `record_waste` — atomic waste logging (v1.1): waste Flow + slim WasteEvent + one reason-specific detail row from a `p_details` jsonb payload; `total_cost` from `last_unit_cost`; member-gated, row-locked, capped at on-hand. Supersedes the planned `log_waste` edge function.
+- `soft_delete_inventory_item` — single-item removal: zero-out adjustment first when quantity ≠ 0 (flow sum stays reconcilable), then sets `deleted_at`; admin/owner-gated SECURITY DEFINER (a client-side update trips the RLS SELECT trap). See `Journey - Removing an Inventory Item`.
 - `search_products_fuzzy` — trigram-ranked catalog candidates over the `products.name` GIN index; used by `parse-receipt` for line resolution and reusable by the product picker
 
 ### Edge Functions (MVP)

@@ -62,7 +62,7 @@ Derived from the two space fields:
 - Can point to any level in the [[Space]] hierarchy, not just leaf nodes
 - `category_id` override allows a [[Crew]] to recategorize a [[Product]] for their own context
 - `last_unit_cost` updated whenever a purchase [[Flow]] is recorded — applies to the specific item being restocked
-- **Soft delete:** Uses `deleted_at`. Historical [[Flow]]s and [[WasteEvent]]s can still reference deleted items.
+- **Soft delete:** Uses `deleted_at`. Historical [[Flow]]s and [[WasteEvent]]s can still reference deleted items. Single-item removal goes through the `soft_delete_inventory_item` RPC (admin/owner-gated; writes a zero-out adjustment first when quantity ≠ 0 so the flow sum stays reconcilable — see [[Journey - Removing an Inventory Item]]); bulk removal cascades from space deletion (`delete_space_with_items`).
 
 ## Relationships
 
