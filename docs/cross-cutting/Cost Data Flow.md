@@ -15,6 +15,16 @@ Cost enters the system through purchase [[Flow]]s and flows through the entire d
 | 5 | **Waste costing** | [[WasteEvent]] `total_cost` uses cost at time of waste, including derived cost for batch-produced items |
 | 6 | **Meal costing** | Consume [[BatchEvent]]s track `total_cost` even when nothing enters inventory |
 | 7 | **Shopping list** | `unit_cost` captured at checkout on [[ShoppingListItem]] |
+| 8 | **Package break** | A [[PackageBreakEvent]] **splits** the package's `last_unit_cost` × packs opened across its children, recorded on each `package_yield` leg's [[FlowPackageBreakDetail]] `allocated_unit_cost` and cached as the child [[InventoryItem]]'s `last_unit_cost`. **Conservation enforced** — the allocated total equals the package cost. |
+
+## Package Cost Allocation
+
+Opening a package is the one place cost **divides** rather than accumulates. The default split is category-aware (see [[Feature 12 - Inventory Item Composition]] §Cost):
+
+- **All-`count` packs** (variety packs, multipacks) — equal split per individual unit (`$12 pack ÷ 12 cans = $1.00/can`).
+- **Mixed weight/volume kits** — split per component line (reference-price-weighted when children have known costs, else equal-per-line), divided across each line's quantity.
+
+Both are overridable at break time, and the `open_package` RPC **asserts the allocated total equals the package cost** regardless of method. From there the allocated child cost behaves like any other `last_unit_cost`: it flows downstream into waste costing (step 5) and recipe/batch costing (steps 2–4) if a child is later wasted or used as an ingredient.
 
 ## Key Insight
 
@@ -32,3 +42,4 @@ A wasted bottle of housemade simple syrup doesn't just cost "a bottle" — it co
 - [[Feature 9 - Batching and Prepping]] — batch total cost and derived item cost
 - [[Feature 6 - Waste Tracking]] — waste cost reporting including derived costs
 - [[Feature 10 - Shopping List]] — cost captured at checkout
+- [[Feature 12 - Inventory Item Composition]] — package cost split across children at break time

@@ -20,10 +20,11 @@
 - [[SpaceTemplate]] — Pre-built hierarchy blueprints
 
 ### Catalog
-- [[Product]] — Specific purchasable product (has `source` field, optionally belongs to [[ProductGroup]])
+- [[Product]] — Specific purchasable product (has `source` field + `is_package` flag, optionally belongs to [[ProductGroup]])
 - [[ProductGroup]] — Generic product concept (e.g., "Sugar") that groups specific Products. Used by recipes for generic ingredients.
 - [[Category]] — Product/item categorization
 - [[InventoryItem]] — Crew-specific product instance at a location (quantity is a **cache** derived from [[Flow]] ledger)
+- [[ProductComponent]] — A line in a package Product's bill of materials (composition template; enables [[Journey - Opening a Package]])
 - [[ProductAlias]] — Learned mapping from abbreviated receipt line text → a catalog [[Product]] (powers receipt-scan auto-resolution)
 - [[ProductSubmission]] — Review queue for promoting crew-private Products to master catalog
 
@@ -36,6 +37,8 @@
 - [[FlowTransferDetail]] — Transfer-specific: from_space_id, to_space_id
 - [[FlowPrepUsageDetail]] — Prep-usage-specific: batch_id
 - [[FlowAdjustmentDetail]] — Adjustment-specific: adjustment_type, expected_quantity, actual_quantity, audit_session_id, reason
+- [[PackageBreakEvent]] — Immutable header for opening a package (inverse of a store-intent [[BatchEvent]]); 1 `package_break` out-leg + N `package_yield` in-legs
+- [[FlowPackageBreakDetail]] — Child of [[Flow]] for both break leg types (`role` = package | component); links each leg to its [[PackageBreakEvent]] + cost allocation
 - [[IntakeSession]] — Session-based batch receiving (post-shopping intake or delivery)
 - [[IntakeSessionItem]] — Line items within an intake session (expected vs. received, discrepancy tracking)
 
@@ -89,6 +92,7 @@
 9. [[Feature 9 - Batching and Prepping]]
 10. [[Feature 10 - Shopping List]]
 11. [[Feature 11 - Kiosk Mode]]
+12. [[Feature 12 - Inventory Item Composition]] — packages: composition templates + break-on-open
 13. [[Feature 13 - In-App Feedback]] — in-app feedback widget that auto-files to ClickUp
 
 ---
@@ -111,6 +115,7 @@
 - [[Journey - Editing a Recipe]] — Same form as creation. Metadata updates in place. Substance changes create new version with change summary. Version comparison and revert.
 - [[Journey - Cooking a Meal]] — Consume-intent batch. Interactive: scale, resolve ProductGroup ingredients, deduct as you go, mid-batch failure handling.
 - [[Journey - Prepping for Storage]] — Store-intent batch. Shares Steps 1-3 with Cooking a Meal. Output: single or split portions with required locations and derived cost.
+- [[Journey - Opening a Package]] — Break a sealed package into its child items (inverse of a store-intent batch). Catalog-side composition authoring + 4-step break (count → preview merge/create → cost split → confirm → atomic `open_package`). *(designed, pending implementation)*
 - [[Journey - Building a Shopping List]] — Multiple named lists, collaborative with attribution, manual item adding at Product/InventoryItem/ProductGroup level.
 - [[Journey - Auto-Generated Shopping List]] — Three triggers (low stock, recipe needs, planned batch), configurable per Crew, dedicated staging list.
 - [[Journey - Shopping Trip]] — In-store check-off + batched checkout with cost capture and restock target resolution.
@@ -149,5 +154,6 @@
 - **Recipe output_product_id.** Links recipe to its output [[Product]] for store intent. See [[Recipe]].
 - **Circular reference guard.** App-level + DB trigger on [[RecipeIngredient]].
 - **Within-category unit conversion.** See [[UnitDefinition]].
+- **Inventory item composition (packages).** A [[Product]] can be a package ([[ProductComponent]] BOM + `is_package`); a sealed pack breaks on open into child items via [[PackageBreakEvent]] (1 `package_break` out + N `package_yield` in), the inverse of a store-intent [[BatchEvent]]. Cost is split across children with conservation enforced. See [[Feature 12 - Inventory Item Composition]].
 - **Kiosk uses token-based auth (Path B).** Independent of Clerk sessions. See [[KioskSession]].
 - **Invite system.** Code-based invites with expiry and revocation. See [[Invite]].

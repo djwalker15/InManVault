@@ -76,6 +76,7 @@ Mini timeline showing recent [[Flow]]s for this item:
 | **Put back** | When displaced (home ≠ current) | One-tap: `current_space_id` = `home_space_id`. Creates transfer [[Flow]]. | [[Journey - Moving Items]] |
 | **Log waste** | Always | Opens waste logging with item pre-selected | [[Journey - Logging Waste]] |
 | **Add to list** | Always | Pick a [[ShoppingList]], set quantity. Creates [[ShoppingListItem]] with `source_type` = manual. | [[Journey - Building a Shopping List]] |
+| **Open** | When the item is a package (`is_package`) with `quantity` ≥ 1 | Opens the break flow — convert sealed packs into child items | [[Journey - Opening a Package]] |
 | **Edit** | Always | Edit [[InventoryItem]] fields (quantity, unit, locations, min_stock, expiry, notes, category override) | — |
 
 Actions that create [[Flow]]s show a brief success toast and update the expanded detail card in place.

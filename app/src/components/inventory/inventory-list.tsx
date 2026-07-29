@@ -37,6 +37,7 @@ interface ProductRow {
   size_value: number | null
   size_unit: string | null
   default_category_id: string | null
+  is_package: boolean
 }
 
 interface CategoryRow {
@@ -135,7 +136,7 @@ export function InventoryList({ crewId }: InventoryListProps) {
         supabase
           .from('products')
           .select(
-            'product_id, name, brand, barcode, image_url, size_value, size_unit, default_category_id',
+            'product_id, name, brand, barcode, image_url, size_value, size_unit, default_category_id, is_package',
           )
           .in('product_id', productIds)
           .is('deleted_at', null),
@@ -170,6 +171,7 @@ export function InventoryList({ crewId }: InventoryListProps) {
           size_value: null,
           size_unit: null,
           default_category_id: null,
+          is_package: false,
         }
       }
       // Hydrate the category lookup with both per-item categories and
@@ -517,6 +519,7 @@ function InventoryRowDetailsAdapter({
       categoryOverridden={categoryOverridden}
       quantity={item.quantity}
       unit={item.unit}
+      isPackage={product.is_package}
       currentLocationPath={row.locationPath}
       currentSpaceId={item.current_space_id}
       homeSpaceId={item.home_space_id}

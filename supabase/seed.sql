@@ -98,3 +98,50 @@ begin
     on conflict (flow_id) do nothing;
   end loop;
 end $$;
+
+-- ── Demo package: a soda variety 12-pack (Feature 12) ────────
+-- A crew-private package Product (4 Coke / 4 Sprite / 4 Fanta) plus a
+-- sealed inventory item so the Opening-a-Package journey is demoable
+-- out of the box. Opening it breaks the pack into its three child sodas.
+insert into public.products (product_id, crew_id, name, brand, source, created_by, is_package) values
+  ('d0d0d0d0-0000-4000-8000-000000000050', 'd0d0d0d0-0000-4000-8000-000000000001',
+   'Soda Variety 12-pack', 'Demo Co', 'crew_created', 'user_3FBGwBSpx1mbHnfEve5oHaKQTqE', true),
+  ('d0d0d0d0-0000-4000-8000-000000000051', 'd0d0d0d0-0000-4000-8000-000000000001',
+   'Coke 12oz can', 'Coca-Cola', 'crew_created', 'user_3FBGwBSpx1mbHnfEve5oHaKQTqE', false),
+  ('d0d0d0d0-0000-4000-8000-000000000052', 'd0d0d0d0-0000-4000-8000-000000000001',
+   'Sprite 12oz can', 'Coca-Cola', 'crew_created', 'user_3FBGwBSpx1mbHnfEve5oHaKQTqE', false),
+  ('d0d0d0d0-0000-4000-8000-000000000053', 'd0d0d0d0-0000-4000-8000-000000000001',
+   'Fanta 12oz can', 'Coca-Cola', 'crew_created', 'user_3FBGwBSpx1mbHnfEve5oHaKQTqE', false)
+on conflict (product_id) do nothing;
+
+insert into public.product_components
+  (component_id, package_product_id, component_product_id, quantity, unit, sort_order) values
+  ('d0d0d0d0-0000-4000-8000-000000000060', 'd0d0d0d0-0000-4000-8000-000000000050',
+   'd0d0d0d0-0000-4000-8000-000000000051', 4, 'count', 0),
+  ('d0d0d0d0-0000-4000-8000-000000000061', 'd0d0d0d0-0000-4000-8000-000000000050',
+   'd0d0d0d0-0000-4000-8000-000000000052', 4, 'count', 1),
+  ('d0d0d0d0-0000-4000-8000-000000000062', 'd0d0d0d0-0000-4000-8000-000000000050',
+   'd0d0d0d0-0000-4000-8000-000000000053', 4, 'count', 2)
+on conflict (component_id) do nothing;
+
+-- Sealed stock: 3 packs at $12/pack in the Pantry.
+insert into public.inventory_items
+  (inventory_item_id, crew_id, product_id, current_space_id, home_space_id,
+   unit, last_unit_cost, created_by)
+values
+  ('d0d0d0d0-0000-4000-8000-000000000055', 'd0d0d0d0-0000-4000-8000-000000000001',
+   'd0d0d0d0-0000-4000-8000-000000000050', 'd0d0d0d0-0000-4000-8000-000000000011',
+   'd0d0d0d0-0000-4000-8000-000000000011', 'pkg', 12.00, 'user_3FBGwBSpx1mbHnfEve5oHaKQTqE')
+on conflict (inventory_item_id) do nothing;
+
+insert into public.flows
+  (flow_id, crew_id, inventory_item_id, flow_type, quantity, unit, performed_by, notes)
+values
+  ('d0d0d0d0-0000-4000-8000-000000000065', 'd0d0d0d0-0000-4000-8000-000000000001',
+   'd0d0d0d0-0000-4000-8000-000000000055', 'purchase', 3, 'pkg',
+   'user_3FBGwBSpx1mbHnfEve5oHaKQTqE', 'Demo seed sealed packs')
+on conflict (flow_id) do nothing;
+
+insert into public.flow_purchase_details (flow_id, unit_cost, source)
+values ('d0d0d0d0-0000-4000-8000-000000000065', 12.00, 'Demo seed')
+on conflict (flow_id) do nothing;

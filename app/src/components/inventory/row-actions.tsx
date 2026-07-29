@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Edit3,
   Home,
   MoveRight,
+  PackageOpen,
   RotateCcw,
   ShoppingCart,
   Trash2,
@@ -24,6 +26,9 @@ interface RowActionsProps {
   currentSpaceId: string
   homeSpaceId: string | null
   unit: string
+  quantity: number
+  /** Whether this item's product is a package (can be opened). */
+  isPackage: boolean
   category_id: string | null
   min_stock: number | null
   expiry_date: string | null
@@ -46,6 +51,8 @@ export function RowActions({
   currentSpaceId,
   homeSpaceId,
   unit,
+  quantity,
+  isPackage,
   category_id,
   min_stock,
   expiry_date,
@@ -54,6 +61,7 @@ export function RowActions({
   categories,
 }: RowActionsProps) {
   const supabase = useSupabase()
+  const navigate = useNavigate()
   const [action, setAction] = useState<Action>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -108,6 +116,21 @@ export function RowActions({
       )}
 
       <div className="flex flex-wrap gap-1.5">
+        {isPackage && (
+          <ActionButton
+            icon={<PackageOpen size={14} />}
+            label="Open"
+            disabled={quantity <= 0}
+            title={
+              quantity <= 0
+                ? 'No sealed packs to open.'
+                : 'Open this package into its contents'
+            }
+            onClick={() =>
+              navigate(`/inventory/open/${inventoryItemId}`)
+            }
+          />
+        )}
         <ActionButton
           icon={<MoveRight size={14} />}
           label="Move"

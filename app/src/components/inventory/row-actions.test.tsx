@@ -1,8 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { mockClerk } from '@/test/clerk-mock'
 import { makeSupabaseMock } from '@/test/supabase-mock'
 import { RowActions } from './row-actions'
+
+/** RowActions calls useNavigate(), so it must render inside a Router. */
+function renderRA(ui: React.ReactElement) {
+  return render(ui, { wrapper: MemoryRouter })
+}
 
 const sampleSpaces = [
   { space_id: 's_p', parent_id: null, unit_type: 'premises', name: 'My House' },
@@ -16,6 +22,8 @@ const baseProps = {
   currentSpaceId: 's_a',
   homeSpaceId: null as string | null,
   unit: 'count',
+  quantity: 1,
+  isPackage: false,
   category_id: null as string | null,
   min_stock: null as number | null,
   expiry_date: null as string | null,
@@ -28,7 +36,7 @@ describe('RowActions', () => {
   it('renders all primary action buttons', () => {
     mockClerk({ user: { id: 'user_1' } })
     makeSupabaseMock({ spaces: { select: { data: sampleSpaces, error: null } } })
-    render(<RowActions {...baseProps} />)
+    renderRA(<RowActions {...baseProps} />)
     expect(screen.getByRole('button', { name: /move/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^edit$/i })).toBeInTheDocument()
     // Set home shows when home is null (unsorted)
@@ -51,8 +59,7 @@ describe('RowActions', () => {
   it('shows Put back when displaced and hides Set home', () => {
     mockClerk({ user: { id: 'user_1' } })
     makeSupabaseMock({ spaces: { select: { data: sampleSpaces, error: null } } })
-    render(
-      <RowActions {...baseProps} homeSpaceId="s_b" currentSpaceId="s_a" />,
+    renderRA(<RowActions {...baseProps} homeSpaceId="s_b" currentSpaceId="s_a" />,
     )
     expect(
       screen.getByRole('button', { name: /put back/i }),
@@ -69,7 +76,7 @@ describe('RowActions', () => {
       { spaces: { select: { data: sampleSpaces, error: null } } },
       { record_transfer: { data: 'flow_1', error: null } },
     )
-    render(<RowActions {...baseProps} onChanged={onChanged} />)
+    renderRA(<RowActions {...baseProps} onChanged={onChanged} />)
     fireEvent.click(screen.getByRole('button', { name: /^move$/i }))
     await waitFor(() => {
       expect(
@@ -97,8 +104,7 @@ describe('RowActions', () => {
       { spaces: { select: { data: sampleSpaces, error: null } } },
       { record_transfer: { data: 'flow_pb', error: null } },
     )
-    render(
-      <RowActions
+    renderRA(<RowActions
         {...baseProps}
         homeSpaceId="s_b"
         currentSpaceId="s_a"
@@ -125,7 +131,7 @@ describe('RowActions', () => {
       spaces: { select: { data: sampleSpaces, error: null } },
       inventory_items: { update: { data: null, error: null } },
     })
-    render(<RowActions {...baseProps} onChanged={onChanged} />)
+    renderRA(<RowActions {...baseProps} onChanged={onChanged} />)
     fireEvent.click(screen.getByRole('button', { name: /^set home$/i }))
     await waitFor(() => {
       expect(
@@ -151,8 +157,7 @@ describe('RowActions', () => {
       spaces: { select: { data: sampleSpaces, error: null } },
       inventory_items: { update: { data: null, error: null } },
     })
-    render(
-      <RowActions
+    renderRA(<RowActions
         {...baseProps}
         min_stock={2}
         notes="something"
@@ -180,5 +185,25 @@ describe('RowActions', () => {
       })
     })
     expect(onChanged).toHaveBeenCalled()
+  })
+
+  it('hides Open for non-package items', () => {
+    mockClerk({ user: { id: 'user_1' } })
+    makeSupabaseMock({ spaces: { select: { data: sampleSpaces, error: null } } })
+    renderRA(<RowActions {...baseProps} isPackage={false} quantity={3} />)
+    expect(screen.queryByRole('button', { name: /^open$/i })).toBeNull()
+  })
+
+  it('shows Open for a package and disables it at zero quantity', () => {
+    mockClerk({ user: { id: 'user_1' } })
+    makeSupabaseMock({ spaces: { select: { data: sampleSpaces, error: null } } })
+    const { rerender } = renderRA(
+      <RowActions {...baseProps} isPackage quantity={3} />,
+    )
+    expect(
+      screen.getByRole('button', { name: /^open$/i }),
+    ).toBeInTheDocument()
+    rerender(<RowActions {...baseProps} isPackage quantity={0} />)
+    expect(screen.getByRole('button', { name: /^open$/i })).toBeDisabled()
   })
 })

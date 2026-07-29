@@ -2,7 +2,7 @@
 
 > **Generated:** March 31, 2026
 > **Purpose:** Map every user journey across the system — serves as the index for the `journeys/` folder
-> **Status:** ✅ All 26 journeys complete — 24 documented + 2 absorbed (#15 → #8, #19 → #7)
+> **Status:** ✅ 26 core journeys complete — 24 documented + 2 absorbed (#15 → #8, #19 → #7). +1 designed: #27 Opening a Package (pending implementation, see [[Feature 12 - Inventory Item Composition]]).
 
 ---
 
@@ -24,6 +24,7 @@
 | 5 | [[Journey - Moving Items]] | ✅ Documented | Five scenarios: single item move (immediate Flow), put-back routine (batch displaced items), set home locations (batch unsorted), bulk reassign with preview (Space to Space), reorganize (space-centric or item-centric free-form redistribution). |
 | 6 | [[Journey - Checking Stock]] | ✅ Documented | Browse by [[Space]], browse by [[Category]], search, view item detail with inline expansion, inline actions (restock, move, waste, add to list), alerts summary (low stock, expired, displaced). |
 | 7 | [[Journey - Intake Session]] | ✅ Documented | Session-based workflow for receiving multiple items (replaces "Restocking"). Two modes: batch table (list-seeded with discrepancy tracking) and sequential (from-scratch). Covers personal post-shopping intake and commercial delivery receiving. Also covers journey #19 (Post-Shopping Intake). |
+| 27 | [[Journey - Opening a Package]] | 🎯 Designed | Break a sealed package [[InventoryItem]] into its child items — the inverse of a store-intent [[BatchEvent]]. Choose count → preview resolved children (merge-vs-create, unit convert) → review cost split (conservation-enforced) → confirm → atomic `open_package`. Data-model spec: [[Feature 12 - Inventory Item Composition]]. |
 
 ---
 
@@ -92,9 +93,11 @@ Onboarding (1) → Space Setup (2) → Adding Inventory (4)
 
 Adding Inventory (4) → Checking Stock (6) → Moving Items (5)
                      → Intake Session (7)
+                     → Opening a Package (27)   [also from Checking Stock (6)]
 
 Checking Stock (6) → Auto-Generated Shopping List (17)
                    → Expiry Management (8) → Logging Waste (13)
+                   → Opening a Package (27)
 
 Creating a Recipe (9) → Editing a Recipe (10)
                       → Cooking a Meal (11)
@@ -120,10 +123,10 @@ All journeys with data → Cost Reporting (23)
 
 | Entity | Journeys That Touch It |
 |--------|----------------------|
-| [[Flow]] | 4, 5, 7, 8, 11, 12, 13, 15, 18, 21, 23, 24 |
-| [[InventoryItem]] | 4, 5, 6, 7, 8, 11, 12, 13, 15, 17, 18, 21, 24 |
-| [[Space]] | 2, 4, 5, 6, 7, 13, 21, 25 |
-| [[Product]] | 4, 6, 7, 9, 16, 17, 18 |
+| [[Flow]] | 4, 5, 7, 8, 11, 12, 13, 15, 18, 21, 23, 24, 27 |
+| [[InventoryItem]] | 4, 5, 6, 7, 8, 11, 12, 13, 15, 17, 18, 21, 24, 27 |
+| [[Space]] | 2, 4, 5, 6, 7, 13, 21, 25, 27 |
+| [[Product]] | 4, 6, 7, 9, 16, 17, 18, 27 |
 | [[ProductGroup]] | 9, 11, 12 |
 | [[Recipe]] | 9, 10, 11, 12, 17 |
 | [[ShoppingList]] / [[ShoppingListItem]] | 7, 16, 17, 18 |

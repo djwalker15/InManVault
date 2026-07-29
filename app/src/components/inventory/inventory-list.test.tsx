@@ -1,14 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import {
   fireEvent,
-  render,
+  render as rtlRender,
   screen,
   waitFor,
   within,
 } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { mockClerk } from '@/test/clerk-mock'
 import { makeSupabaseMock } from '@/test/supabase-mock'
 import { InventoryList } from './inventory-list'
+
+// Expanding a row renders RowActions, which calls useNavigate(), so every
+// render needs a Router in the tree.
+function render(ui: React.ReactElement) {
+  return rtlRender(ui, { wrapper: MemoryRouter })
+}
 
 const items = [
   {

@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
   FileSpreadsheet,
+  PackageOpen,
   Receipt,
   ScanLine,
   Search,
@@ -49,6 +50,12 @@ const METHODS: Method[] = [
     glyph: <Receipt aria-hidden size={22} className="text-sage-700" />,
     title: 'Scan a receipt',
     body: 'Photograph a receipt or invoice to add everything you bought, with prices.',
+  },
+  {
+    to: '/inventory/add/package',
+    glyph: <PackageOpen aria-hidden size={22} className="text-sage-700" />,
+    title: 'Create a package',
+    body: 'Define a multipack or variety pack and its contents, then open it into individual items.',
   },
 ]
 

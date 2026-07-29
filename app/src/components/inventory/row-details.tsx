@@ -17,6 +17,8 @@ interface InventoryRowDetailsProps {
   categoryOverridden: boolean
   quantity: number
   unit: string
+  /** When true, the item's product is a package and can be opened. */
+  isPackage?: boolean
   currentLocationPath: string
   currentSpaceId?: string
   homeSpaceId?: string | null
@@ -44,6 +46,8 @@ interface FlowRow {
     | 'prep_usage'
     | 'batch_output'
     | 'adjustment'
+    | 'package_break'
+    | 'package_yield'
   quantity: number
   unit: string
   performed_at: string
@@ -59,6 +63,8 @@ const FLOW_LABEL: Record<FlowRow['flow_type'], string> = {
   prep_usage: 'Used in a batch',
   batch_output: 'Created from a batch',
   adjustment: 'Adjusted',
+  package_break: 'Opened',
+  package_yield: 'Unpacked',
 }
 
 export function InventoryRowDetails(props: InventoryRowDetailsProps) {
@@ -226,6 +232,8 @@ export function InventoryRowDetails(props: InventoryRowDetailsProps) {
           currentSpaceId={props.currentSpaceId}
           homeSpaceId={props.homeSpaceId ?? null}
           unit={props.unit}
+          quantity={props.quantity}
+          isPackage={props.isPackage ?? false}
           category_id={props.categoryId ?? null}
           min_stock={props.minStock}
           expiry_date={props.expiryDate}

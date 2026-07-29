@@ -1,8 +1,10 @@
 erDiagram
     %% ═══════════════════════════════════════════
     %% INMAN — Entity Relationship Diagram
-    %% Updated: March 31, 2026 (post-review v3 + onboarding journey)
-    %% Changes: Added Invite entity, token_hash on KioskSession
+    %% Updated: June 15, 2026 (Feature 12 — Inventory Item Composition)
+    %% Changes: Added ProductComponent, PackageBreakEvent, FlowPackageBreakDetail;
+    %%          is_package on Product; package_break/package_yield flow types
+    %% Prior: March 31, 2026 — Invite entity, token_hash on KioskSession
     %% ═══════════════════════════════════════════
 
     %% ─── TENANCY & AUTH ───────────────────────
@@ -105,6 +107,7 @@ erDiagram
         numeric size_value
         string size_unit
         int product_group_id FK "nullable"
+        boolean is_package "default false; has active components"
         enum source "seeded|barcode_api|crew_created|manual|promoted"
         int crew_id FK "nullable"
         text created_by FK "Clerk user ID"
@@ -179,6 +182,24 @@ erDiagram
     Space ||--o{ InventoryItem : "current_space"
     Category ||--o{ InventoryItem : "category override"
 
+    %% ─── PACKAGE COMPOSITION (Feature 12) ─────
+
+    ProductComponent {
+        int component_id PK
+        int package_product_id FK "the package product"
+        int component_product_id FK "what's inside"
+        numeric quantity "> 0, per single package"
+        string unit FK "UnitDefinition"
+        int sort_order
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at "soft delete"
+    }
+
+    Product ||--o{ ProductComponent : "package has components"
+    Product ||--o{ ProductComponent : "component product"
+    UnitDefinition ||--o{ ProductComponent : "line unit"
+
     %% ─── CATALOG CURATION ─────────────────────
 
     ProductSubmission {
@@ -216,7 +237,7 @@ erDiagram
         int flow_id PK
         int crew_id FK
         int inventory_item_id FK
-        enum flow_type "purchase|waste|consumption|transfer|prep_usage|adjustment"
+        enum flow_type "purchase|waste|consumption|transfer|prep_usage|adjustment|package_break|package_yield"
         numeric quantity
         string unit
         text performed_by FK "Clerk user ID"
@@ -261,6 +282,34 @@ erDiagram
     }
 
     Flow ||--o| FlowAdjustmentDetail : "adjustment detail"
+
+    FlowPackageBreakDetail {
+        int flow_id FK "PK, one-to-one"
+        int break_event_id FK
+        enum role "package | component"
+        int component_product_id FK "null when role=package"
+        numeric allocated_unit_cost "nullable"
+        timestamp created_at
+    }
+
+    PackageBreakEvent {
+        int break_event_id PK
+        int crew_id FK
+        int package_inventory_item_id FK "the pack opened"
+        int package_product_id FK "denormalized"
+        numeric quantity_opened "> 0"
+        text performed_by FK "Clerk user ID"
+        timestamp performed_at
+        timestamp created_at
+    }
+
+    Flow ||--o| FlowPackageBreakDetail : "package_break / package_yield detail"
+    PackageBreakEvent ||--o{ FlowPackageBreakDetail : "legs (1 package + N component)"
+    Crew ||--o{ PackageBreakEvent : "owns"
+    InventoryItem ||--o{ PackageBreakEvent : "package opened"
+    Product ||--o{ PackageBreakEvent : "package product"
+    Product ||--o{ FlowPackageBreakDetail : "component product"
+    User ||--o{ PackageBreakEvent : "performed_by"
 
     %% ─── WASTE ────────────────────────────────
 

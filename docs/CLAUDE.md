@@ -10,7 +10,7 @@
 
 InMan is an inventory management application for tracking what you have, where it's stored, how much is left, and what needs restocking. It scales from a single person in an apartment to a family household to a commercial environment like a bar.
 
-The project has a complete conceptual data model (43 entities across 11 features), 26 documented user journeys, and 19 architecture decisions — ready for implementation.
+The project has a complete conceptual data model (46 entities across 12 features), 26 documented user journeys (+1 designed: #27 Opening a Package, pending implementation), and 20 architecture decisions — ready for implementation.
 
 ---
 
@@ -66,9 +66,9 @@ using (
 
 All mutable entities use soft deletes via `deleted_at` (timestamp, nullable). Nothing is truly deleted — this preserves the full audit trail for historical analysis (waste trends, cost reporting, level history).
 
-**Soft-deleted entities:** Product, Category, Recipe, RecipeVersion, Space, SpaceTemplate, InventoryItem, ShoppingList, KioskSession, CrewMember
+**Soft-deleted entities:** Product, ProductComponent, Category, Recipe, RecipeVersion, Space, SpaceTemplate, InventoryItem, ShoppingList, KioskSession, CrewMember
 
-**Never deleted (immutable records):** Flow, all Flow child tables (FlowPurchaseDetail, FlowTransferDetail, FlowPrepUsageDetail, FlowAdjustmentDetail), WasteEvent, all waste detail tables, BatchEvent, BatchInput, BatchOutput, RecipeStep, RecipeIngredient, all RecipeIngredient child tables, IntakeSession, IntakeSessionItem, UnitDefinition
+**Never deleted (immutable records):** Flow, all Flow child tables (FlowPurchaseDetail, FlowTransferDetail, FlowPrepUsageDetail, FlowAdjustmentDetail, FlowPackageBreakDetail), WasteEvent, all waste detail tables, BatchEvent, BatchInput, BatchOutput, PackageBreakEvent, RecipeStep, RecipeIngredient, all RecipeIngredient child tables, IntakeSession, IntakeSessionItem, UnitDefinition
 
 Active queries always filter `WHERE deleted_at IS NULL`. RLS policies include the same filter.
 
@@ -83,6 +83,7 @@ Multi-step operations that must fully succeed or fully roll back are implemented
 - **Bulk space reassignment** — move all items from one space to another, create transfer Flows for each, optionally update home locations
 - **Put-back routine** — batch transfer Flows for all displaced items being returned to home
 - **Inventory audit corrections** — create adjustment Flows for all flagged discrepancies in one transaction
+- **Open package (`open_package`)** — break a sealed package into children: create PackageBreakEvent, one `package_break` out-Flow on the pack, N `package_yield` in-Flows on resolved children (merge-into-existing or create-new), a FlowPackageBreakDetail per leg, and child `last_unit_cost` from the allocated cost — asserting cost conservation
 - **Kiosk action routing** — edge functions validate kiosk token, verify allowed actions, execute operations via service role key, set `performed_by` from identified crew member
 
 ### Unit Conversion: Within-Category
@@ -151,7 +152,8 @@ The conceptual data model covers 11 features across 43 entities. All 26 user jou
 - `space_templates` — pre-built hierarchy blueprints (nullable `crew_id`)
 
 **Catalog:**
-- `products` — specific purchasable product (name, brand, barcode, image, size). Has `product_group_id` (FK → ProductGroup, nullable) linking to a generic group. Has `source` field tracking origin. Nullable `crew_id`.
+- `products` — specific purchasable product (name, brand, barcode, image, size). Has `product_group_id` (FK → ProductGroup, nullable) linking to a generic group. Has `source` field tracking origin. Has `is_package boolean` (app-maintained: true iff active `product_components` rows exist). Nullable `crew_id`.
+- `product_components` — bill-of-materials line for a **package** product (`package_product_id`, `component_product_id`, `quantity`, `unit`, `sort_order`). Catalog-layer composition template, like a recipe's ingredient list. Mutable + soft-deletable; RLS derived by joining to the package product (no own `crew_id`).
 - `product_groups` — generic product concept (e.g., "Sugar", "Olive Oil") that groups specific Products. Recipes can reference these for generic ingredients. Nullable `crew_id` (pre-seeded, admin-curated, crew-created). At batch time, user chooses which specific InventoryItem to deduct from (FIFO suggestion).
 - `product_submissions` — review queue for promoting crew-private products to master catalog. InMan admin team reviews. Supports merge with existing master catalog duplicates.
 - `categories` — categorization. Nullable `crew_id` (null = system default, set = crew-custom)
@@ -168,6 +170,8 @@ The conceptual data model covers 11 features across 43 entities. All 26 user jou
 - `flow_adjustment_details` — child of Flow when `flow_type` = adjustment. Fields: adjustment_type (cache_correction/physical_count), expected_quantity, actual_quantity, audit_session_id, reason.
 - Waste flows use the existing `waste_events` table as their child.
 - Consumption flows have no child row — no extra fields needed.
+- `package_break_events` — immutable header for opening a package (inverse of a store-intent batch). Fields: `package_inventory_item_id`, `package_product_id`, `quantity_opened`, `performed_by`. Mirrors `batch_events`.
+- `flow_package_break_details` — child of Flow for **both** `package_break` and `package_yield` legs (the exception to one-table-per-flow_type). Fields: `break_event_id`, `role` (package | component), `component_product_id`, `allocated_unit_cost`. Links every leg to its `package_break_events` header.
 - `intake_sessions` — session-based batch receiving. Source types: `shopping_list` (seeded from completed list), `manual` (from scratch), `purchase_order` (future). Tracks who received, when, total cost, item count. Completion is atomic via edge function.
 - `intake_session_items` — line items within an intake session. Tracks expected vs. received quantity, unit cost, shelving location (deferrable). Discrepancy statuses: received, short, extra, skipped.
 
@@ -255,8 +259,10 @@ All inventory changes are recorded as flow events. **No `direction` column** —
 | `transfer` | lateral | Updates current_space_id (from_space → to_space), no quantity change |
 | `prep_usage` | out | Decreases cached quantity (ingredient consumed in batch) |
 | `adjustment` | in or out | Corrects cached quantity (from system reconciliation or physical count) |
+| `package_break` | out | Decreases sealed-pack quantity on a package item (a pack is opened) |
+| `package_yield` | in | Increases a child item's quantity (contents released from an opened pack) |
 
-Every flow is user-stamped (`performed_by text FK → users`).
+`package_break` and `package_yield` are the legs of a `package_break_events` header and share one child table, `flow_package_break_details` (discriminated by `role`). See "Inventory Item Composition" below. Every flow is user-stamped (`performed_by text FK → users`).
 
 **Quantity on InventoryItem is a cache.** If it drifts from the flow sum, the flow sum wins. System reconciliation runs on a configurable schedule (daily/weekly/monthly) to detect drift. Physical count audits allow staff to verify quantities against what's on the shelf. Both produce adjustment Flows (FlowAdjustmentDetail) to correct discrepancies with a full audit trail.
 
@@ -271,6 +277,7 @@ Every flow is user-stamped (`performed_by text FK → users`).
 5. **Waste costing** → WasteEvent `total_cost` includes derived cost for batch-produced items
 6. **Meal costing** → consume BatchEvents track `total_cost` even with no stored output
 7. **Shopping list** → `unit_cost` captured at checkout on ShoppingListItem
+8. **Package break** → a package's `last_unit_cost` × packs opened is **split** across its children (category-aware default, override at open time, conservation enforced) onto each child's `last_unit_cost`; from there it re-enters the pipeline (waste, recipe) like any other item cost
 
 ---
 
@@ -345,7 +352,7 @@ end;
 $$ language plpgsql;
 ```
 
-Immutable entities (Flow, all Flow child tables, WasteEvent, waste details, BatchInput, BatchOutput, RecipeIngredient, RecipeIngredient child tables, RecipeStep, IntakeSession, IntakeSessionItem) have `created_at` only — they are never modified after creation.
+Immutable entities (Flow, all Flow child tables, WasteEvent, waste details, BatchInput, BatchOutput, PackageBreakEvent, RecipeIngredient, RecipeIngredient child tables, RecipeStep, IntakeSession, IntakeSessionItem) have `created_at` only — they are never modified after creation.
 
 ---
 
@@ -396,10 +403,12 @@ Immutable entities (Flow, all Flow child tables, WasteEvent, waste details, Batc
 18. **Enum + child tables (Approach 4) for ALL polymorphic references.** Consistent pattern across the entire model. Parent has an enum discriminator, each type gets its own child table with real FK constraints and type-specific fields. No nullable FK columns on parent entities. Applied to:
     - RecipeIngredient (`ingredient_type`): 4 child tables — ProductRef, GroupRef, RecipeRef, FreeText
     - ShoppingListItem (`source_type`): 3 child tables — LowStockSource, RecipeSource, BatchSource. Manual has no child row.
-    - Flow (`flow_type`): 4 child tables — PurchaseDetail, TransferDetail, PrepUsageDetail, AdjustmentDetail. WasteEvent is the existing waste child. Consumption has no child row.
+    - Flow (`flow_type`): 4 child tables — PurchaseDetail, TransferDetail, PrepUsageDetail, AdjustmentDetail. WasteEvent is the existing waste child. Consumption has no child row. `package_break` + `package_yield` **share** one child (FlowPackageBreakDetail, discriminated by `role`) — the one deliberate two-types-one-table case, because both are legs of the same break event.
     - WasteEvent (`waste_reason`): 6 child tables (already used this pattern before the decision was formalized)
 
 19. **Adjustment Flow type for inventory audits.** `flow_type` = `adjustment` with FlowAdjustmentDetail child table. Two adjustment types: `cache_correction` (system reconciliation found drift) and `physical_count` (staff counted and found a discrepancy). Preserves full audit trail of what was wrong and how it was fixed.
+
+20. **Inventory item composition (packages).** A Product can be a **package** whose contents are tracked individually (variety pack, multipack of identical units, ad-hoc crew bundle). Composition is a catalog-layer BOM (`product_components` on the Product, like a recipe's ingredient list) + an `is_package` flag. A sealed pack is its own InventoryItem counted in packs; it **breaks on open** (not at purchase) — the inverse of a store-intent BatchEvent: one `package_break` out-Flow on the pack + N `package_yield` in-Flows on children, grouped under a `package_break_events` header, written atomically by `open_package`. Both legs use the shared `flow_package_break_details` child. Children resolve **merge-into-existing-or-create-new** (within-category unit convert; cross-category falls back to create-new). Package cost is **split across children with conservation enforced** (category-aware default, override at open time). No clean undo in v1 — the break event + flows are immutable, so the UI requires a confirm/preview step. See `Feature 12 - Inventory Item Composition` and `Journey - Opening a Package`.
 
 ---
 
@@ -454,6 +463,7 @@ Adding Inventory (product resolution, atomic `record_purchase` RPC, restock sub-
 
 ### Post-MVP Edge Functions (identified)
 - `log_waste` (v1.1), `complete_batch` (v1.2), `checkout_shopping_trip` (v1.3), `complete_intake_session` (v1.3), `kiosk_action_router` (v1.4), `run_reconciliation` (v1.5)
+- `open_package` — atomic plpgsql RPC (same shape as `record_purchase` / checkout): PackageBreakEvent + `package_break` out-Flow + N resolved `package_yield` in-Flows + per-leg FlowPackageBreakDetail + child `last_unit_cost`, asserting cost conservation
 
 ---
 

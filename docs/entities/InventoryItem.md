@@ -1,6 +1,6 @@
 # InventoryItem
 
-> Part of [[Feature 3 - Item Catalog]], [[Feature 4 - Inventory Level Tracking]], [[Feature 5 - Assignment and Location Tracing]]
+> Part of [[Feature 3 - Item Catalog]], [[Feature 4 - Inventory Level Tracking]], [[Feature 5 - Assignment and Location Tracing]], [[Feature 12 - Inventory Item Composition]]
 
 A [[Crew]]'s specific instance of a [[Product]] at a location. This is the "how much do we have and where is it?" layer. The same [[Product]] can appear as multiple InventoryItems within a [[Crew]] (e.g., Cholula in the pantry AND on the countertop are two separate records).
 
@@ -29,6 +29,16 @@ A [[Crew]]'s specific instance of a [[Product]] at a location. This is the "how 
 > **Critical:** `quantity` is NOT the source of truth. The [[Flow]] ledger is canonical. Every operation that changes quantity MUST create a [[Flow]] — no direct quantity updates allowed.
 >
 > `quantity` is updated on every Flow for fast reads. A reconciliation function periodically recalculates quantity by summing all Flows for each item and correcting any drift. If cached quantity and flow sum disagree, **the flow sum wins**.
+
+## Packages — Sealed Stock vs. Loose Children
+
+When the [[Product]] is a package (`is_package = true`), the InventoryItem holds **sealed packs** — `quantity` counts unopened packages, not their contents. **Opening** a pack is the moment it converts into child items: a [[PackageBreakEvent]] writes one `package_break` out-[[Flow]] on this item and N `package_yield` in-[[Flow]]s on the children. Both levels are ordinary InventoryItems — **no special table** — so the quantity-as-cache invariant holds at both.
+
+- A break is **not** triggered at purchase — you can simultaneously hold *2 sealed packs* and *3 loose Cokes* from a previously-opened pack, and every number is cache-consistent.
+- Child resolution at break time **merges into an existing** child item (within-category unit-convert) or **creates a new one** — the same merge-vs-create resolution as batch store-output and shopping checkout.
+- "Remaining composition" of an opened pack = the current child item levels. Consuming/wasting a loose child is a normal `consumption`/`waste` Flow on the child — no package awareness. Wasting a *sealed* pack is a normal `waste` Flow on the package item at pack cost — it does **not** spawn children.
+
+See [[Feature 12 - Inventory Item Composition]] and [[Journey - Opening a Package]].
 
 ## Three Item States
 
@@ -65,6 +75,7 @@ Derived from the two space fields:
 - Referenced by [[BatchOutput]] when produced by a batch
 - Referenced by [[WasteEvent]] (via Flow) when wasted
 - Referenced by [[ShoppingListItem]] as `source_inventory_item_id`
+- As a package: referenced by [[PackageBreakEvent]] as `package_inventory_item_id` (the pack being opened); children are created/merged by the break
 
 ## See Also
 

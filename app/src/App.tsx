@@ -17,6 +17,8 @@ import QuickAddPage from './routes/inventory/add/quick'
 import BarcodeScanPage from './routes/inventory/add/scan'
 import BulkImportPage from './routes/inventory/add/import'
 import ReceiptScanPage from './routes/inventory/add/receipt'
+import CreatePackagePage from './routes/inventory/add/package'
+import OpenPackagePage from './routes/inventory/open'
 import AlertsPage from './routes/alerts'
 import CrewsPage from './routes/crews'
 import CrewSettingsPage from './routes/crew/settings'
@@ -50,6 +52,11 @@ export default function App() {
           <Route path="/inventory/add/scan" element={<BarcodeScanPage />} />
           <Route path="/inventory/add/import" element={<BulkImportPage />} />
           <Route path="/inventory/add/receipt" element={<ReceiptScanPage />} />
+          <Route path="/inventory/add/package" element={<CreatePackagePage />} />
+          <Route
+            path="/inventory/open/:itemId"
+            element={<OpenPackagePage />}
+          />
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/crews" element={<CrewsPage />} />
           <Route path="/crew/settings" element={<CrewSettingsPage />} />
