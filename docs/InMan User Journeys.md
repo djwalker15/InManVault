@@ -25,6 +25,7 @@
 | 6 | [[Journey - Checking Stock]] | ✅ Documented | Browse by [[Space]], browse by [[Category]], search, view item detail with inline expansion, inline actions (restock, move, waste, add to list), alerts summary (low stock, expired, displaced). |
 | 7 | [[Journey - Intake Session]] | ✅ Documented | Session-based workflow for receiving multiple items (replaces "Restocking"). Two modes: batch table (list-seeded with discrepancy tracking) and sequential (from-scratch). Covers personal post-shopping intake and commercial delivery receiving. Also covers journey #19 (Post-Shopping Intake). |
 | 27 | [[Journey - Opening a Package]] | 🎯 Designed | Break a sealed package [[InventoryItem]] into its child items — the inverse of a store-intent [[BatchEvent]]. Choose count → preview resolved children (merge-vs-create, unit convert) → review cost split (conservation-enforced) → confirm → atomic `open_package`. Data-model spec: [[Feature 12 - Inventory Item Composition]]. |
+| 28 | [[Journey - Removing an Inventory Item]] | ✅ Documented | Soft-delete an item from active tracking via `soft_delete_inventory_item` (admin/owner-gated RPC; zero-out adjustment when quantity ≠ 0; ledger history untouched; no restore in v1). Entry point: Remove inline action in [[Journey - Checking Stock]]. |
 
 ---
 
