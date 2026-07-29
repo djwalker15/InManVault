@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   SlidersHorizontal,
   Trash2,
+  Utensils,
 } from 'lucide-react'
 import {
   CtaTray,
@@ -19,8 +20,9 @@ import {
 import { SpaceSelect } from '@/components/spaces/space-select'
 import { useSupabase } from '@/lib/supabase'
 import { AdjustForm } from './adjust-form'
+import { ConsumeForm } from './consume-form'
 
-type Action = 'move' | 'set-home' | 'put-back' | 'edit' | 'adjust' | null
+type Action = 'move' | 'set-home' | 'put-back' | 'edit' | 'adjust' | 'use' | null
 
 interface RowActionsProps {
   crewId: string
@@ -134,6 +136,18 @@ export function RowActions({
           />
         )}
         <ActionButton
+          icon={<Utensils size={14} />}
+          label="Use"
+          active={action === 'use'}
+          disabled={quantity <= 0}
+          title={
+            quantity <= 0
+              ? 'Nothing on hand to use.'
+              : 'Record using some of this item'
+          }
+          onClick={() => setAction(action === 'use' ? null : 'use')}
+        />
+        <ActionButton
           icon={<MoveRight size={14} />}
           label="Move"
           active={action === 'move'}
@@ -204,6 +218,22 @@ export function RowActions({
         <SetHomeForm
           crewId={crewId}
           inventoryItemId={inventoryItemId}
+          busy={busy}
+          setBusy={setBusy}
+          setError={setError}
+          onCancel={close}
+          onSaved={() => {
+            onChanged()
+            close()
+          }}
+        />
+      )}
+
+      {action === 'use' && (
+        <ConsumeForm
+          inventoryItemId={inventoryItemId}
+          unit={unit}
+          quantity={quantity}
           busy={busy}
           setBusy={setBusy}
           setError={setError}

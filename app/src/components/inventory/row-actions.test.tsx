@@ -187,6 +187,33 @@ describe('RowActions', () => {
     expect(onChanged).toHaveBeenCalled()
   })
 
+  it('Use opens the consume form and calls record_consumption', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    const onChanged = vi.fn()
+    const sb = makeSupabaseMock(
+      { spaces: { select: { data: sampleSpaces, error: null } } },
+      { record_consumption: { data: 'flow_use', error: null } },
+    )
+    renderRA(<RowActions {...baseProps} quantity={4} onChanged={onChanged} />)
+    fireEvent.click(screen.getByRole('button', { name: /^use$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /record use/i }))
+    await waitFor(() => {
+      expect(sb.rpc).toHaveBeenCalledWith('record_consumption', {
+        p_inventory_item_id: 'item_1',
+        p_quantity: 1,
+        p_notes: null,
+      })
+    })
+    expect(onChanged).toHaveBeenCalled()
+  })
+
+  it('disables Use at zero quantity', () => {
+    mockClerk({ user: { id: 'user_1' } })
+    makeSupabaseMock({ spaces: { select: { data: sampleSpaces, error: null } } })
+    renderRA(<RowActions {...baseProps} quantity={0} />)
+    expect(screen.getByRole('button', { name: /^use$/i })).toBeDisabled()
+  })
+
   it('Adjust opens the count form and calls record_adjustment', async () => {
     mockClerk({ user: { id: 'user_1' } })
     const onChanged = vi.fn()

@@ -6,7 +6,9 @@
 
 ## Summary
 
-Unified transaction ledger. Five flow types: purchase (in), waste (out), consumption (out), transfer (move), prep_usage (out). Every flow is user-stamped. Powers inventory level history, movement history, waste reporting, and cost tracking. Purchase source/receipt tracking deferred.
+Unified transaction ledger. Eight flow types: purchase (in), waste (out), consumption (out), transfer (move), prep_usage (out), adjustment (in/out), package_break (out), package_yield (in) — plus `batch_output` reserved in the DB enum for v1.2 batching. Every flow is user-stamped. Powers inventory level history, movement history, waste reporting, and cost tracking. Purchase source/receipt tracking deferred.
+
+Shipped write paths: `record_purchase`, `restock_inventory`, `record_transfer`, `bulk_import_inventory`, `open_package`, `record_adjustment`, `record_consumption` (the Checking Stock "Use it" action — consumption has no child detail table).
 
 ## What This Ledger Powers
 
