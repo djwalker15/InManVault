@@ -30,6 +30,7 @@ interface InventoryItemRow {
 
 interface ProductRow {
   product_id: string
+  crew_id: string | null
   name: string
   brand: string | null
   barcode: string | null
@@ -38,6 +39,12 @@ interface ProductRow {
   size_unit: string | null
   default_category_id: string | null
   is_package: boolean
+}
+
+interface UnitDefRow {
+  unit: string
+  unit_category: string
+  to_base_factor: number
 }
 
 interface CategoryRow {
@@ -72,6 +79,8 @@ interface LoadedData {
   categoryOptions: { category_id: string; name: string }[]
   /** Every category visible to this crew — used by the inline Edit form. */
   allCategories: { category_id: string; name: string; crew_id: string | null }[]
+  /** All unit definitions — the inline Edit form's unit picker + converter. */
+  allUnits: UnitDefRow[]
   spaceOptions: { space_id: string; label: string }[]
   spaceChildEntries: Array<readonly [string, string[]]>
   allSpaceRows: SpaceLite[]
@@ -81,6 +90,7 @@ const EMPTY_LOAD: LoadedData = {
   rows: [],
   categoryOptions: [],
   allCategories: [],
+  allUnits: [],
   spaceOptions: [],
   spaceChildEntries: [],
   allSpaceRows: [],
@@ -136,7 +146,7 @@ export function InventoryList({ crewId }: InventoryListProps) {
         supabase
           .from('products')
           .select(
-            'product_id, name, brand, barcode, image_url, size_value, size_unit, default_category_id, is_package',
+            'product_id, crew_id, name, brand, barcode, image_url, size_value, size_unit, default_category_id, is_package',
           )
           .in('product_id', productIds)
           .is('deleted_at', null),
@@ -164,6 +174,7 @@ export function InventoryList({ crewId }: InventoryListProps) {
       function fallbackProduct(id: string): ProductRow {
         return {
           product_id: id,
+          crew_id: null,
           name: 'Unknown product',
           brand: null,
           barcode: null,
@@ -301,21 +312,32 @@ export function InventoryList({ crewId }: InventoryListProps) {
 
       // Fetch ALL categories visible to this crew (system + crew-private)
       // so the inline Edit form can offer the full picker, not just the
-      // categories already in use by some inventory item.
-      const { data: allCatsData } = await supabase
-        .from('categories')
-        .select('category_id, name, crew_id')
-        .is('deleted_at', null)
-        .order('name', { ascending: true })
+      // categories already in use by some inventory item. Units power the
+      // Edit form's unit picker + within-category conversion.
+      const [{ data: allCatsData }, { data: allUnitsData }] = await Promise.all([
+        supabase
+          .from('categories')
+          .select('category_id, name, crew_id')
+          .is('deleted_at', null)
+          .order('name', { ascending: true }),
+        supabase
+          .from('unit_definitions')
+          .select('unit, unit_category, to_base_factor')
+          .order('unit', { ascending: true }),
+      ])
       if (cancelled) return
       const allCategoriesData = (Array.isArray(allCatsData)
         ? allCatsData
         : []) as { category_id: string; name: string; crew_id: string | null }[]
+      const allUnitRows = (Array.isArray(allUnitsData)
+        ? allUnitsData
+        : []) as UnitDefRow[]
 
       setLoaded({
         rows: rendered,
         categoryOptions: categoryOpts,
         allCategories: allCategoriesData,
+        allUnits: allUnitRows,
         spaceOptions: spaceOpts,
         spaceChildEntries: Array.from(descendants.entries()).map(
           ([id, set]) => [id, Array.from(set)] as const,
@@ -414,6 +436,7 @@ export function InventoryList({ crewId }: InventoryListProps) {
                     row={row}
                     crewId={crewId}
                     categories={loaded?.allCategories ?? []}
+                    units={loaded?.allUnits ?? []}
                     onChanged={() => setReloadKey((k) => k + 1)}
                     spaces={allSpaces}
                   />
@@ -485,6 +508,7 @@ interface InventoryRowDetailsAdapterProps {
   spaces: Map<string, SpaceLite>
   crewId: string
   categories: { category_id: string; name: string; crew_id: string | null }[]
+  units: UnitDefRow[]
   onChanged: () => void
 }
 
@@ -493,6 +517,7 @@ function InventoryRowDetailsAdapter({
   spaces,
   crewId,
   categories,
+  units,
   onChanged,
 }: InventoryRowDetailsAdapterProps) {
   const { item, product, categoryName, alerts } = row
@@ -512,6 +537,7 @@ function InventoryRowDetailsAdapter({
       productId={product.product_id}
       productName={product.name}
       productBrand={product.brand}
+      productCrewId={product.crew_id}
       productImageUrl={product.image_url}
       productSize={productSize}
       productBarcode={product.barcode}
@@ -533,6 +559,7 @@ function InventoryRowDetailsAdapter({
       alerts={alerts}
       crewId={crewId}
       categories={categories}
+      units={units}
       onChanged={onChanged}
     />
   )

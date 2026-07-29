@@ -20,6 +20,7 @@ import {
 } from '@/components/ds'
 import { SpaceSelect } from '@/components/spaces/space-select'
 import { useSupabase } from '@/lib/supabase'
+import { buildUnitMap, convertQuantity } from '@/lib/units'
 import { AdjustForm } from './adjust-form'
 import { ConsumeForm } from './consume-form'
 import { WasteForm } from './waste-form'
@@ -38,6 +39,11 @@ type Action =
 interface RowActionsProps {
   crewId: string
   inventoryItemId: string
+  productId: string
+  productName: string
+  productBrand: string | null
+  /** The product's crew (null = master catalog). Gates name/brand editing. */
+  productCrewId: string | null
   currentSpaceId: string
   homeSpaceId: string | null
   unit: string
@@ -53,6 +59,8 @@ interface RowActionsProps {
   onChanged: () => void
   /** All categories the user can pick from (system + crew). */
   categories: { category_id: string; name: string; crew_id: string | null }[]
+  /** All unit definitions — powers the Edit form's unit picker. */
+  units: UnitDefRow[]
 }
 
 interface CategoryOption {
@@ -61,9 +69,19 @@ interface CategoryOption {
   crew_id: string | null
 }
 
+interface UnitDefRow {
+  unit: string
+  unit_category: string
+  to_base_factor: number
+}
+
 export function RowActions({
   crewId,
   inventoryItemId,
+  productId,
+  productName,
+  productBrand,
+  productCrewId,
   currentSpaceId,
   homeSpaceId,
   unit,
@@ -76,6 +94,7 @@ export function RowActions({
   notes,
   onChanged,
   categories,
+  units,
 }: RowActionsProps) {
   const supabase = useSupabase()
   const navigate = useNavigate()
@@ -324,12 +343,18 @@ export function RowActions({
       {action === 'edit' && (
         <EditForm
           inventoryItemId={inventoryItemId}
+          productId={productId}
+          productName={productName}
+          productBrand={productBrand}
+          productCrewId={productCrewId}
           unit={unit}
+          quantity={quantity}
           category_id={category_id}
           min_stock={min_stock}
           expiry_date={expiry_date}
           notes={notes}
           categories={categories}
+          units={units}
           busy={busy}
           setBusy={setBusy}
           setError={setError}
@@ -617,12 +642,18 @@ function RemoveForm({
 
 interface EditFormProps {
   inventoryItemId: string
+  productId: string
+  productName: string
+  productBrand: string | null
+  productCrewId: string | null
   unit: string
+  quantity: number
   category_id: string | null
   min_stock: number | null
   expiry_date: string | null
   notes: string | null
   categories: CategoryOption[]
+  units: UnitDefRow[]
   busy: boolean
   setBusy: (b: boolean) => void
   setError: (e: string | null) => void
@@ -632,12 +663,18 @@ interface EditFormProps {
 
 function EditForm({
   inventoryItemId,
+  productId,
+  productName,
+  productBrand,
+  productCrewId,
   unit,
+  quantity,
   category_id,
   min_stock,
   expiry_date,
   notes,
   categories,
+  units,
   busy,
   setBusy,
   setError,
@@ -646,26 +683,90 @@ function EditForm({
 }: EditFormProps) {
   const supabase = useSupabase()
   const [categoryId, setCategoryId] = useState(category_id ?? '')
+  const [selectedUnit, setSelectedUnit] = useState(unit)
   const [minStock, setMinStock] = useState(
     min_stock !== null ? String(min_stock) : '',
   )
   const [expiry, setExpiry] = useState(expiry_date ?? '')
   const [noteText, setNoteText] = useState(notes ?? '')
+  // Crew-private products expose their name/brand for editing here; master
+  // catalog products are shared and stay read-only.
+  const isCrewProduct = productCrewId !== null
+  const [nameText, setNameText] = useState(productName)
+  const [brandText, setBrandText] = useState(productBrand ?? '')
+
+  // Only units in the SAME category as the current unit are offered — the
+  // DB blocks cross-category conversion, and so does convertQuantity().
+  const currentCategory = units.find((u) => u.unit === unit)?.unit_category
+  const sameCategoryUnits = units.filter(
+    (u) => u.unit_category === currentCategory,
+  )
 
   async function handleSubmit() {
     setBusy(true)
     setError(null)
     try {
+      const payload: Record<string, unknown> = {
+        category_id: categoryId === '' ? null : categoryId,
+        min_stock: minStock.trim() === '' ? null : Number(minStock),
+        expiry_date: expiry === '' ? null : expiry,
+        notes: noteText.trim() === '' ? null : noteText,
+      }
+
+      if (selectedUnit !== unit) {
+        // Unit re-denomination: the same physical amount expressed in a new
+        // (same-category) unit. inventory_items.quantity is normally a cache
+        // written only by the Flow trigger — this is the ONE sanctioned
+        // direct quantity write, because the amount on hand doesn't change,
+        // only the unit it's denominated in. No Flow row is warranted.
+        const unitMap = buildUnitMap(units)
+        const convertedQty = convertQuantity(
+          quantity,
+          unit,
+          selectedUnit,
+          unitMap,
+        )
+        if (convertedQty === null) {
+          throw new Error(`Can't convert ${unit} to ${selectedUnit}.`)
+        }
+        payload.unit = selectedUnit
+        payload.quantity = convertedQty
+        if (payload.min_stock !== null) {
+          const convertedMin = convertQuantity(
+            payload.min_stock as number,
+            unit,
+            selectedUnit,
+            unitMap,
+          )
+          if (convertedMin === null) {
+            throw new Error(`Can't convert ${unit} to ${selectedUnit}.`)
+          }
+          payload.min_stock = convertedMin
+        }
+      }
+
       const { error: updateError } = await supabase
         .from('inventory_items')
-        .update({
-          category_id: categoryId === '' ? null : categoryId,
-          min_stock: minStock.trim() === '' ? null : Number(minStock),
-          expiry_date: expiry === '' ? null : expiry,
-          notes: noteText.trim() === '' ? null : noteText,
-        })
+        .update(payload)
         .eq('inventory_item_id', inventoryItemId)
       if (updateError) throw updateError
+
+      // Crew-private product: name/brand edits go to the products table
+      // (RLS products_update allows any crew member).
+      const trimmedName = nameText.trim()
+      const trimmedBrand = brandText.trim()
+      const nameChanged = trimmedName !== '' && trimmedName !== productName
+      const brandChanged = trimmedBrand !== (productBrand ?? '')
+      if (isCrewProduct && (nameChanged || brandChanged)) {
+        const { error: productError } = await supabase
+          .from('products')
+          .update({
+            name: trimmedName === '' ? productName : trimmedName,
+            brand: trimmedBrand === '' ? null : trimmedBrand,
+          })
+          .eq('product_id', productId)
+        if (productError) throw productError
+      }
       onSaved()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save.')
@@ -682,6 +783,48 @@ function EditForm({
       <p className="font-body text-xs text-ink-500">
         Quantity changes go through Restock, Move, or Adjust — not edit.
       </p>
+      {isCrewProduct && (
+        <>
+          <Field
+            label="PRODUCT NAME"
+            placeholder="Whole milk"
+            value={nameText}
+            onValueChange={setNameText}
+            hint="This product is private to your crew, so you can rename it."
+          />
+          <Field
+            label="BRAND (OPTIONAL)"
+            placeholder="Great Value"
+            value={brandText}
+            onValueChange={setBrandText}
+          />
+        </>
+      )}
+      <label className="flex flex-col gap-2">
+        <span className="font-display text-sm font-bold uppercase tracking-[0.35px] text-ink-900">
+          Unit
+        </span>
+        <select
+          value={selectedUnit}
+          onChange={(e) => setSelectedUnit(e.target.value)}
+          className="h-12 rounded-xl bg-paper-100 px-3 font-body text-base text-ink-900 outline-none focus:bg-paper-250"
+        >
+          {sameCategoryUnits.length === 0 && (
+            <option value={unit}>{unit}</option>
+          )}
+          {sameCategoryUnits.map((u) => (
+            <option key={u.unit} value={u.unit}>
+              {u.unit}
+            </option>
+          ))}
+        </select>
+        {selectedUnit !== unit && (
+          <span className="font-body text-xs text-ink-500">
+            The quantity on hand converts automatically — same amount, new
+            unit.
+          </span>
+        )}
+      </label>
       <label className="flex flex-col gap-2">
         <span className="font-display text-sm font-bold uppercase tracking-[0.35px] text-ink-900">
           Category

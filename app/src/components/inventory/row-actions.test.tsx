@@ -16,9 +16,20 @@ const sampleSpaces = [
   { space_id: 's_b', parent_id: 's_p', unit_type: 'area', name: 'Bar' },
 ]
 
+const sampleUnits = [
+  { unit: 'count', unit_category: 'count', to_base_factor: 1 },
+  { unit: 'pkg', unit_category: 'count', to_base_factor: 1 },
+  { unit: 'g', unit_category: 'weight', to_base_factor: 1 },
+  { unit: 'kg', unit_category: 'weight', to_base_factor: 1000 },
+]
+
 const baseProps = {
   crewId: 'crew_abc',
   inventoryItemId: 'item_1',
+  productId: 'prod_1',
+  productName: 'Tomato Paste',
+  productBrand: null as string | null,
+  productCrewId: null as string | null,
   currentSpaceId: 's_a',
   homeSpaceId: null as string | null,
   unit: 'count',
@@ -30,6 +41,7 @@ const baseProps = {
   expiry_date: null as string | null,
   notes: null as string | null,
   categories: [] as { category_id: string; name: string; crew_id: string | null }[],
+  units: sampleUnits,
   onChanged: () => {},
 }
 
@@ -190,6 +202,85 @@ describe('RowActions', () => {
       })
     })
     expect(onChanged).toHaveBeenCalled()
+  })
+
+  it('Edit form converts quantity + min_stock when the unit changes', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    const onChanged = vi.fn()
+    const sb = makeSupabaseMock({
+      spaces: { select: { data: sampleSpaces, error: null } },
+      inventory_items: { update: { data: null, error: null } },
+    })
+    renderRA(
+      <RowActions
+        {...baseProps}
+        unit="g"
+        quantity={500}
+        min_stock={250}
+        onChanged={onChanged}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^edit$/i }))
+    const unitSelect = screen.getByLabelText(/^unit$/i)
+    // Only same-category units are offered (weight here — no count units).
+    expect(
+      screen.queryByRole('option', { name: 'count' }),
+    ).toBeNull()
+    fireEvent.change(unitSelect, { target: { value: 'kg' } })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    await waitFor(() => {
+      expect(sb.tables.inventory_items.update).toHaveBeenCalledWith({
+        category_id: null,
+        min_stock: 0.25,
+        expiry_date: null,
+        notes: null,
+        unit: 'kg',
+        quantity: 0.5,
+      })
+    })
+    expect(onChanged).toHaveBeenCalled()
+  })
+
+  it('Edit form updates name/brand on the products table for crew-private products', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    const onChanged = vi.fn()
+    const sb = makeSupabaseMock({
+      spaces: { select: { data: sampleSpaces, error: null } },
+      inventory_items: { update: { data: null, error: null } },
+      products: { update: { data: null, error: null } },
+    })
+    renderRA(
+      <RowActions
+        {...baseProps}
+        productCrewId="crew_abc"
+        productName="item 27182"
+        onChanged={onChanged}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^edit$/i }))
+    fireEvent.change(screen.getByLabelText(/product name/i), {
+      target: { value: 'Whole Milk' },
+    })
+    fireEvent.change(screen.getByLabelText(/brand/i), {
+      target: { value: 'Great Value' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    await waitFor(() => {
+      expect(sb.tables.products.update).toHaveBeenCalledWith({
+        name: 'Whole Milk',
+        brand: 'Great Value',
+      })
+    })
+    expect(onChanged).toHaveBeenCalled()
+  })
+
+  it('Edit form hides name/brand fields for master-catalog products', () => {
+    mockClerk({ user: { id: 'user_1' } })
+    makeSupabaseMock({ spaces: { select: { data: sampleSpaces, error: null } } })
+    renderRA(<RowActions {...baseProps} productCrewId={null} />)
+    fireEvent.click(screen.getByRole('button', { name: /^edit$/i }))
+    expect(screen.queryByLabelText(/product name/i)).toBeNull()
+    expect(screen.queryByLabelText(/brand/i)).toBeNull()
   })
 
   it('Use opens the consume form and calls record_consumption', async () => {

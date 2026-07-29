@@ -5,11 +5,19 @@ import { useSupabase } from '@/lib/supabase'
 import { ALERT_LABEL, type InventoryAlert } from './inventory-status'
 import { RowActions } from './row-actions'
 
+interface UnitDefRow {
+  unit: string
+  unit_category: string
+  to_base_factor: number
+}
+
 interface InventoryRowDetailsProps {
   inventoryItemId: string
   productId: string
   productName: string
   productBrand: string | null
+  /** The product's crew (null = master catalog). Gates name/brand editing. */
+  productCrewId?: string | null
   productImageUrl: string | null
   productSize: { value: number; unit: string } | null
   productBarcode: string | null
@@ -33,6 +41,8 @@ interface InventoryRowDetailsProps {
   /** When provided, renders the inline-actions panel. */
   crewId?: string
   categories?: { category_id: string; name: string; crew_id: string | null }[]
+  /** Unit definitions for the inline Edit form's unit picker. */
+  units?: UnitDefRow[]
   onChanged?: () => void
 }
 
@@ -229,6 +239,10 @@ export function InventoryRowDetails(props: InventoryRowDetailsProps) {
         <RowActions
           crewId={props.crewId}
           inventoryItemId={props.inventoryItemId}
+          productId={props.productId}
+          productName={props.productName}
+          productBrand={props.productBrand}
+          productCrewId={props.productCrewId ?? null}
           currentSpaceId={props.currentSpaceId}
           homeSpaceId={props.homeSpaceId ?? null}
           unit={props.unit}
@@ -240,6 +254,7 @@ export function InventoryRowDetails(props: InventoryRowDetailsProps) {
           expiry_date={props.expiryDate}
           notes={props.notes}
           categories={props.categories ?? []}
+          units={props.units ?? []}
           onChanged={props.onChanged}
         />
       )}
