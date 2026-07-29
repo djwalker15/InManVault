@@ -187,6 +187,31 @@ describe('RowActions', () => {
     expect(onChanged).toHaveBeenCalled()
   })
 
+  it('Adjust opens the count form and calls record_adjustment', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    const onChanged = vi.fn()
+    const sb = makeSupabaseMock(
+      { spaces: { select: { data: sampleSpaces, error: null } } },
+      { record_adjustment: { data: 'flow_adj', error: null } },
+    )
+    renderRA(<RowActions {...baseProps} quantity={5} onChanged={onChanged} />)
+    fireEvent.click(screen.getByRole('button', { name: /^adjust$/i }))
+    fireEvent.change(screen.getByLabelText(/actual count on shelf/i), {
+      target: { value: '2' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /correct count/i }))
+    await waitFor(() => {
+      expect(sb.rpc).toHaveBeenCalledWith('record_adjustment', {
+        p_inventory_item_id: 'item_1',
+        p_actual_quantity: 2,
+        p_reason: null,
+        p_notes: null,
+        p_audit_session_id: null,
+      })
+    })
+    expect(onChanged).toHaveBeenCalled()
+  })
+
   it('hides Open for non-package items', () => {
     mockClerk({ user: { id: 'user_1' } })
     makeSupabaseMock({ spaces: { select: { data: sampleSpaces, error: null } } })

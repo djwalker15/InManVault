@@ -77,7 +77,8 @@ Mini timeline showing recent [[Flow]]s for this item:
 | **Log waste** | Always | Opens waste logging with item pre-selected | [[Journey - Logging Waste]] |
 | **Add to list** | Always | Pick a [[ShoppingList]], set quantity. Creates [[ShoppingListItem]] with `source_type` = manual. | [[Journey - Building a Shopping List]] |
 | **Open** | When the item is a package (`is_package`) with `quantity` ≥ 1 | Opens the break flow — convert sealed packs into child items | [[Journey - Opening a Package]] |
-| **Edit** | Always | Edit [[InventoryItem]] fields (quantity, unit, locations, min_stock, expiry, notes, category override) | — |
+| **Edit** | Always | Edit [[InventoryItem]] fields (min_stock, expiry, notes, category override) — quantity changes go through Restock / Adjust, never edit | — |
+| **Adjust** | Always (RPC enforces admin/owner) | Physical-count correction: enter the actual count, `record_adjustment` writes an adjustment [[Flow]] + [[FlowAdjustmentDetail]] | [[Journey - Inventory Audit]] |
 
 Actions that create [[Flow]]s show a brief success toast and update the expanded detail card in place.
 
@@ -170,7 +171,7 @@ Tapping any count navigates to the alerts summary pre-filtered to that group.
 | [[Space]] | Read (location paths, tree dropdown for browse/filter) | List display, filters, browse by space |
 | [[Category]] | Read (names, item counts) | Filters, category browse |
 | [[Flow]] | Read (recent activity timeline) | Inline expansion detail |
-| [[Flow]] | Insert (transfer, consumption) | Inline actions: move, put back, use it |
+| [[Flow]] | Insert (transfer, consumption, adjustment) | Inline actions: move, put back, use it, adjust count |
 | [[InventoryItem]] | Update (current_space_id, home_space_id, fields) | Inline actions: move, set home, put back, edit |
 | [[ShoppingListItem]] | Insert | Inline action: add to list |
 

@@ -17,9 +17,9 @@ Adjustment-specific fields for a correction to inventory quantity. Created durin
 
 ## Behavior
 
-- The parent [[Flow]]'s `quantity` is the **delta**: `actual_quantity - expected_quantity`. Positive = inventory was undercounted (adjustment adds). Negative = inventory was overcounted (adjustment subtracts).
-- Cached `quantity` on [[InventoryItem]] is updated to match `actual_quantity`
-- **Direction is derived:** positive delta = in, negative delta = out (consistent with other flow types)
+- The parent [[Flow]]'s `quantity` stores the **absolute delta**: `abs(actual_quantity - expected_quantity)`. The `flows` table has a `check (quantity >= 0)` constraint, so a signed delta cannot live on the flow row — **direction derives from this detail row** (`actual_quantity - expected_quantity`: positive = undercounted, adjustment adds; negative = overcounted, adjustment subtracts).
+- Cached `quantity` on [[InventoryItem]] is updated to match `actual_quantity` by the `flow_adjustment_apply` trigger (fires on detail insert; the generic quantity-cache trigger deliberately ignores `adjustment` flows).
+- Written atomically by the `record_adjustment` RPC (single-item physical count, shipped 2026-07; admin/owner-gated, matching this table's INSERT policy). The full [[Journey - Inventory Audit]] audit mode will reuse the same RPC with `audit_session_id` populated.
 
 ## Adjustment Types
 

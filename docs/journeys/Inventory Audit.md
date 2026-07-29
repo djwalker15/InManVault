@@ -15,6 +15,8 @@ Inventory Audit has two modes:
 
 Both modes produce **adjustment Flows** (`flow_type` = `adjustment`) with [[FlowAdjustmentDetail]] child rows, preserving a full audit trail of what was wrong and how it was corrected.
 
+> **Shipped ahead of this journey (2026-07):** a single-item **Adjust** inline action in [[Journey - Checking Stock]] calls the `record_adjustment` RPC (physical count, admin/owner-gated, `audit_session_id` null). The full audit modes below will reuse the same RPC, grouping corrections under an `audit_session_id`.
+
 ---
 
 ## Entry Points
