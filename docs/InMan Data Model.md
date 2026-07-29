@@ -1,8 +1,8 @@
 # InMan — Conceptual Data Model
 
-> **Generated:** March 25, 2026 | **Updated:** March 31, 2026
+> **Generated:** March 25, 2026 | **Updated:** July 29, 2026
 > **Purpose:** Map all planned features, their data requirements, and how they connect — designed for Obsidian graph view
-> **Status:** Conceptual — not yet implemented
+> **Status:** Core schema + full inventory-item lifecycle implemented through the v1.1 waste slice (add / restock / move / open package / adjust / use / waste / remove). Recipes, shopping, kiosk, and reporting remain conceptual.
 > **Auth Provider:** Clerk (string-based user IDs, all user profile data managed by Clerk)
 
 ---
@@ -32,7 +32,7 @@
 - [[UnitDefinition]] — Unit conversion reference (weight, volume, count)
 
 ### Transactions
-- [[Flow]] — Core transaction ledger (enum + child table pattern: `flow_type` discriminates). Types: purchase, waste, consumption, transfer, prep_usage, adjustment.
+- [[Flow]] — Core transaction ledger (enum + child table pattern: `flow_type` discriminates). Types: purchase, waste, consumption, transfer, prep_usage, batch_output (reserved for v1.2 batching), adjustment, package_break, package_yield.
 - [[FlowPurchaseDetail]] — Purchase-specific: unit_cost, source
 - [[FlowTransferDetail]] — Transfer-specific: from_space_id, to_space_id
 - [[FlowPrepUsageDetail]] — Prep-usage-specific: batch_id
@@ -115,7 +115,7 @@
 - [[Journey - Editing a Recipe]] — Same form as creation. Metadata updates in place. Substance changes create new version with change summary. Version comparison and revert.
 - [[Journey - Cooking a Meal]] — Consume-intent batch. Interactive: scale, resolve ProductGroup ingredients, deduct as you go, mid-batch failure handling.
 - [[Journey - Prepping for Storage]] — Store-intent batch. Shares Steps 1-3 with Cooking a Meal. Output: single or split portions with required locations and derived cost.
-- [[Journey - Opening a Package]] — Break a sealed package into its child items (inverse of a store-intent batch). Catalog-side composition authoring + 4-step break (count → preview merge/create → cost split → confirm → atomic `open_package`). *(designed, pending implementation)*
+- [[Journey - Opening a Package]] — Break a sealed package into its child items (inverse of a store-intent batch). Catalog-side composition authoring + 4-step break (count → preview merge/create → cost split → confirm → atomic `open_package`). *(shipped 2026-07-29, PR #36)*
 - [[Journey - Building a Shopping List]] — Multiple named lists, collaborative with attribution, manual item adding at Product/InventoryItem/ProductGroup level.
 - [[Journey - Auto-Generated Shopping List]] — Three triggers (low stock, recipe needs, planned batch), configurable per Crew, dedicated staging list.
 - [[Journey - Shopping Trip]] — In-store check-off + batched checkout with cost capture and restock target resolution.

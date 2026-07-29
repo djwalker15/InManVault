@@ -2671,3 +2671,18 @@ Use this document to verify each edge makes conceptual sense, and to annotate wi
 **Data Flow:**
 
 **UI Detail:**
+
+---
+
+## Opening a Package (#27) / Removing an Item (#28) — added 2026-07-29
+
+> Canvas nodes not yet added — do alongside the next canvas revision.
+
+| #   | From                          | To                                        | Label       | Data Flow                                                                                                        | UI Detail                                                                                                   |
+| --- | ----------------------------- | ----------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 1   | [Checking Stock] Item row     | Open action → `/inventory/open/:itemId`   | Open        | Reads package item + `product_components`; no writes until confirm.                                               | "Open" inline action on package items only; launches the 4-step break wizard (count → preview → cost → confirm). |
+| 2   | Open wizard — Confirm         | `open_package` RPC                        | Confirm     | Atomic: PackageBreakEvent + `package_break` out-Flow + N `package_yield` in-Flows + FlowPackageBreakDetail per leg; child `last_unit_cost` from allocated cost (conservation asserted). | Confirm/preview step is mandatory — the break event + flows are immutable (no undo in v1).                    |
+| 3   | [Checking Stock] Item row     | Remove action → `soft_delete_inventory_item` | Remove   | Zero-out adjustment Flow first when quantity ≠ 0, then sets `deleted_at`; admin/owner-gated SECURITY DEFINER.      | Confirm dialog warns removal is permanent in v1; item disappears from active lists, ledger history retained.  |
+| 4   | [Checking Stock] Item row     | Log waste → `record_waste` RPC            | Log waste   | Waste Flow + slim WasteEvent + one reason-specific detail row (`p_details` jsonb); capped at on-hand.              | Reason-first form with reason-specific detail fields; confirmation before deducting.                          |
+| 5   | [Checking Stock] Item row     | Use → `record_consumption` RPC            | Use         | Consumption Flow, no child detail; member-gated, row-locked, capped at on-hand.                                    | Quick quantity stepper inline; stays in the list after logging.                                                |
+| 6   | [Checking Stock] Item row     | Adjust → `record_adjustment` RPC          | Adjust      | Adjustment Flow (abs delta) + FlowAdjustmentDetail (`physical_count`, direction = actual − expected); admin/owner-gated. | "Adjust count" inline action; shows expected vs. actual before committing.                                     |

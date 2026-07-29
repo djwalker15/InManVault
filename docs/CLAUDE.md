@@ -1,6 +1,6 @@
 # CLAUDE.md — InMan Project Context
 
-> **Last updated:** June 19, 2026 — content covers through Phase 8 (CI/CD + product site) and the inventory add-methods. See **Superseded Guidance** below for reversed decisions.
+> **Last updated:** July 29, 2026 — content covers through the outbound inventory lifecycle (adjust / use / waste / remove), Feature 12 Opening a Package (merged), and the v1.1 waste slice. See **Superseded Guidance** below for reversed decisions.
 > **Repositories:** djwalker15/InMan (app), djwalker15/InManVault (Obsidian vault)
 > **Owner:** Davontae Walker (djwalker@tenacioustech.net)
 
@@ -10,7 +10,7 @@
 
 InMan is an inventory management application for tracking what you have, where it's stored, how much is left, and what needs restocking. It scales from a single person in an apartment to a family household to a commercial environment like a bar.
 
-The project has a complete conceptual data model (46 entities across 12 features), 26 documented user journeys (+1 designed: #27 Opening a Package, pending implementation), and 20 architecture decisions — ready for implementation.
+The project has a complete data model (48 entities across 13 features), 26 active user journeys (#1–#28, 2 absorbed), and 22 architecture decisions. The core inventory loop — add, check, move, adjust, use, waste, open, remove — is implemented.
 
 ---
 
@@ -139,7 +139,7 @@ If literal row-level DELETE is ever required (GDPR variant, EU residency require
 
 ## Data Model Overview
 
-The conceptual data model covers 11 features across 43 entities. All 26 user journeys are documented. Full documentation lives in the Obsidian vault (`inman-vault/`, 83 files). Here's the summary:
+The data model covers 13 features across 48 entities. 26 active user journeys are documented (#1–#28, 2 absorbed). Full documentation lives in the Obsidian vault (`docs/`, 99 markdown files). Here's the summary:
 
 ### Entity Map
 
@@ -260,6 +260,7 @@ All inventory changes are recorded as flow events. **No `direction` column** —
 | `consumption` | out | Decreases cached quantity |
 | `transfer` | lateral | Updates current_space_id (from_space → to_space), no quantity change |
 | `prep_usage` | out | Decreases cached quantity (ingredient consumed in batch) |
+| `batch_output` | in | Increases cached quantity (item created from a batch) — **reserved for v1.2 batching**: in the DB enum since phase 3, but not yet written by any RPC |
 | `adjustment` | in or out | Corrects cached quantity (from system reconciliation or physical count) |
 | `package_break` | out | Decreases sealed-pack quantity on a package item (a pack is opened) |
 | `package_yield` | in | Increases a child item's quantity (contents released from an opened pack) |
@@ -378,39 +379,35 @@ Immutable entities (Flow, all Flow child tables, WasteEvent, waste details, Batc
 
 9. **Unit conversion within categories only.** Weight ↔ weight and volume ↔ volume via base unit conversion. Cross-category (weight ↔ volume) is blocked without per-product density data.
 
-10. **Enum + child tables (Approach 4) for all polymorphic references.** Consistent pattern: parent has an enum discriminator, each type gets its own child table with real FK constraints. No nullable FK columns on parent entities. Applied to RecipeIngredient, ShoppingListItem, Flow, and WasteEvent.
-
-11. **ProductGroup ≠ Category.** Categories are broad ("Baking", "Condiments"). ProductGroups are specific ingredient types ("Sugar", "Olive Oil"). Recipes reference ProductGroups for generic ingredients, resolved to specific InventoryItems at batch time.
-
-12. **Recipe versioning is substance-only.** Metadata edits (name, description, times) update in place. Ingredient/step/yield changes create a new RecipeVersion. Revert creates a forward copy — version history only moves forward.
-
-13. **Kiosk auth is independent.** Token-based (Path B), independent of Clerk sessions. Two-step identification (name + PIN) for every action. All operations via edge functions with service role key.
-
-10. **Circular reference protection at two levels.** App layer provides friendly UX, DB trigger provides safety net for recipe ingredient cycles.
-
-11. **Kiosk uses token-based auth (Path B).** Independent of Clerk sessions. Token hash stored in DB, raw token on device. Edge functions validate token and handle all kiosk data operations via service role key. Survives admin logout, session expiry, browser restart.
-
-12. **Invite system for Crew membership.** Admins create invites with unique codes, roles, and optional expiry. Invite link (`/invite/:code`) routes new or existing users through acceptance flow. Consumed invite creates a CrewMember record.
-
-13. **Master catalog population (5 layers).** Pre-seeded from Open Food Facts (day one), barcode lookup API (ongoing, automatic), crew-created products (ongoing, organic), manual curation by InMan admin team, and promotion from crew-private via ProductSubmission review. InMan admin team is the only approver. Merge capability prevents duplicates.
-
-14. **Intake Sessions for batch receiving.** Structured session-based workflow for restocking multiple items. Seeded from shopping lists (batch table with discrepancy tracking) or from scratch (sequential). Session is a persisted record for accountability. Completion is atomic via edge function. Replaces the separate "Restocking" and "Post-Shopping Intake" journeys.
-
-15. **Crew Owner distinct from Admin.** `owner_id` on Crew. Owner has all Admin privileges plus: delete crew, transfer ownership, remove Admins. Only Admins can be promoted to Owner. Owner cannot leave without transferring ownership first.
-
-16. **Crew deletion with 48-hour waiting period.** Owner requests deletion → all members notified → crew remains functional during countdown → Owner can cancel → after 48 hours, scheduled job soft-deletes crew and cascades to all child entities. Immutable records (Flows, WasteEvents) remain but become inaccessible via RLS.
-
-17. **ProductGroup for generic recipe ingredients.** Separate entity from Product. Recipes can reference a ProductGroup ("Sugar") instead of a specific Product ("Domino Sugar 4lb"). At batch time, user is prompted to choose which specific InventoryItem to deduct from, with FIFO suggestion. ProductGroups populated via pre-seeding, admin curation, and crew creation (nullable `crew_id` pattern).
-
-18. **Enum + child tables (Approach 4) for ALL polymorphic references.** Consistent pattern across the entire model. Parent has an enum discriminator, each type gets its own child table with real FK constraints and type-specific fields. No nullable FK columns on parent entities. Applied to:
+10. **Enum + child tables (Approach 4) for ALL polymorphic references.** Consistent pattern across the entire model. Parent has an enum discriminator, each type gets its own child table with real FK constraints and type-specific fields. No nullable FK columns on parent entities. Applied to:
     - RecipeIngredient (`ingredient_type`): 4 child tables — ProductRef, GroupRef, RecipeRef, FreeText
     - ShoppingListItem (`source_type`): 3 child tables — LowStockSource, RecipeSource, BatchSource. Manual has no child row.
     - Flow (`flow_type`): 4 child tables — PurchaseDetail, TransferDetail, PrepUsageDetail, AdjustmentDetail. WasteEvent is the existing waste child. Consumption has no child row. `package_break` + `package_yield` **share** one child (FlowPackageBreakDetail, discriminated by `role`) — the one deliberate two-types-one-table case, because both are legs of the same break event.
     - WasteEvent (`waste_reason`): 6 child tables (already used this pattern before the decision was formalized)
 
-19. **Adjustment Flow type for inventory audits.** `flow_type` = `adjustment` with FlowAdjustmentDetail child table. Two adjustment types: `cache_correction` (system reconciliation found drift) and `physical_count` (staff counted and found a discrepancy). Preserves full audit trail of what was wrong and how it was fixed.
+11. **ProductGroup ≠ Category.** Categories are broad ("Baking", "Condiments"). ProductGroups are specific ingredient types ("Sugar", "Olive Oil"). Recipes reference ProductGroups for generic ingredients, resolved to specific InventoryItems at batch time.
 
-20. **Inventory item composition (packages).** A Product can be a **package** whose contents are tracked individually (variety pack, multipack of identical units, ad-hoc crew bundle). Composition is a catalog-layer BOM (`product_components` on the Product, like a recipe's ingredient list) + an `is_package` flag. A sealed pack is its own InventoryItem counted in packs; it **breaks on open** (not at purchase) — the inverse of a store-intent BatchEvent: one `package_break` out-Flow on the pack + N `package_yield` in-Flows on children, grouped under a `package_break_events` header, written atomically by `open_package`. Both legs use the shared `flow_package_break_details` child. Children resolve **merge-into-existing-or-create-new** (within-category unit convert; cross-category falls back to create-new). Package cost is **split across children with conservation enforced** (category-aware default, override at open time). No clean undo in v1 — the break event + flows are immutable, so the UI requires a confirm/preview step. See `Feature 12 - Inventory Item Composition` and `Journey - Opening a Package`.
+12. **Recipe versioning is substance-only.** Metadata edits (name, description, times) update in place. Ingredient/step/yield changes create a new RecipeVersion. Revert creates a forward copy — version history only moves forward.
+
+13. **Kiosk auth is independent — token-based (Path B).** Independent of Clerk sessions. Token hash stored in DB, raw token on device. Two-step identification (name + PIN) for every action. Edge functions validate the token and handle all kiosk data operations via service role key. Survives admin logout, session expiry, browser restart.
+
+14. **Circular reference protection at two levels.** App layer provides friendly UX, DB trigger provides safety net for recipe ingredient cycles.
+
+15. **Invite system for Crew membership.** Admins create invites with unique codes, roles, and optional expiry. Invite link (`/invite/:code`) routes new or existing users through acceptance flow. Consumed invite creates a CrewMember record.
+
+16. **Master catalog population (5 layers).** Pre-seeded from Open Food Facts (day one), barcode lookup API (ongoing, automatic), crew-created products (ongoing, organic), manual curation by InMan admin team, and promotion from crew-private via ProductSubmission review. InMan admin team is the only approver. Merge capability prevents duplicates.
+
+17. **Intake Sessions for batch receiving.** Structured session-based workflow for restocking multiple items. Seeded from shopping lists (batch table with discrepancy tracking) or from scratch (sequential). Session is a persisted record for accountability. Completion is atomic via edge function. Replaces the separate "Restocking" and "Post-Shopping Intake" journeys.
+
+18. **Crew Owner distinct from Admin.** `owner_id` on Crew. Owner has all Admin privileges plus: delete crew, transfer ownership, remove Admins. Only Admins can be promoted to Owner. Owner cannot leave without transferring ownership first.
+
+19. **Crew deletion with 48-hour waiting period.** Owner requests deletion → all members notified → crew remains functional during countdown → Owner can cancel → after 48 hours, scheduled job soft-deletes crew and cascades to all child entities. Immutable records (Flows, WasteEvents) remain but become inaccessible via RLS.
+
+20. **ProductGroup for generic recipe ingredients.** Separate entity from Product. Recipes can reference a ProductGroup ("Sugar") instead of a specific Product ("Domino Sugar 4lb"). At batch time, user is prompted to choose which specific InventoryItem to deduct from, with FIFO suggestion. ProductGroups populated via pre-seeding, admin curation, and crew creation (nullable `crew_id` pattern).
+
+21. **Adjustment Flow type for inventory audits.** `flow_type` = `adjustment` with FlowAdjustmentDetail child table. Two adjustment types: `cache_correction` (system reconciliation found drift) and `physical_count` (staff counted and found a discrepancy). Preserves full audit trail of what was wrong and how it was fixed.
+
+22. **Inventory item composition (packages).** A Product can be a **package** whose contents are tracked individually (variety pack, multipack of identical units, ad-hoc crew bundle). Composition is a catalog-layer BOM (`product_components` on the Product, like a recipe's ingredient list) + an `is_package` flag. A sealed pack is its own InventoryItem counted in packs; it **breaks on open** (not at purchase) — the inverse of a store-intent BatchEvent: one `package_break` out-Flow on the pack + N `package_yield` in-Flows on children, grouped under a `package_break_events` header, written atomically by `open_package`. Both legs use the shared `flow_package_break_details` child. Children resolve **merge-into-existing-or-create-new** (within-category unit convert; cross-category falls back to create-new). Package cost is **split across children with conservation enforced** (category-aware default, override at open time). No clean undo in v1 — the break event + flows are immutable, so the UI requires a confirm/preview step. See `Feature 12 - Inventory Item Composition` and `Journey - Opening a Package`.
 
 ---
 
@@ -420,7 +417,7 @@ The MVP delivers the core inventory loop: auth, Crews, Spaces, Products, Invento
 
 **13 tables:** users, crews, crew_members, invites, spaces, categories, product_groups, products, inventory_items, unit_definitions, flows, flow_purchase_details, flow_transfer_details.
 
-**Post-MVP phases:** v1.1 Waste → v1.2 Recipes & Batching → v1.3 Shopping → v1.4 Kiosk → v1.5 Admin & Reporting.
+**Post-MVP phases:** v1.1 Waste → v1.2 Recipes & Batching → v1.3 Shopping → v1.4 Kiosk → v1.5 Admin & Reporting. *(v1.1 Waste **logging** shipped 2026-07 — schema + `record_waste` RPC; the v1.1 analytics journeys — Expiry Management, Reviewing Waste History — remain.)*
 
 Full implementation plan: `inman-vault/InMan Implementation Plan.md`
 
@@ -441,7 +438,7 @@ Each step: SQL migration, RLS policies (`auth.jwt()->>'sub'`), `updated_at` trig
 ### Phase 2 — Vertical Journeys (6 journeys) — in progress
 2.1 Onboarding (Path A) → 2.2 Space Setup → 2.3 Adding Inventory → 2.4 Checking Stock → 2.5 Moving Items → 2.6 Crew Management
 
-Adding Inventory (product resolution, atomic `record_purchase` RPC, restock sub-flow, list shell) is the active slice. Each journey: TypeScript types → Supabase queries → React components under `app/src/components/` → route registration.
+Adding Inventory shipped (5 add methods, including receipt scan). The outbound lifecycle — adjust (`record_adjustment`), use (`record_consumption`), waste (`record_waste`), remove (`soft_delete_inventory_item`) — plus Opening a Package shipped 2026-07-29; the v1.1 waste schema + RPC landed ahead of schedule. Next open slices: waste analytics pages (Expiry Management, Reviewing Waste History), Add-to-list (Shopping), Intake Sessions. Each journey: TypeScript types → Supabase queries → React components under `app/src/components/` → route registration.
 
 ---
 
@@ -594,7 +591,7 @@ entry gives the original decision, what replaced it, and the evidence.
 
 ## Reference Documents
 
-- `inman-vault/` — Complete Obsidian vault with 84 markdown files: 43 entities, 11 features, 24 user journeys, 3 cross-cutting concerns, 3 index documents. Hosted at github.com/djwalker15/InManVault.
+- `docs/` — Complete Obsidian vault with 99 markdown files: 48 entities, 13 features, 26 active user journeys (#1–#28, 2 absorbed), 3 cross-cutting concerns, plus index, plan, edge-review, retrospective, and session-handoff notes. Hosted at github.com/djwalker15/InManVault.
 - `inman-vault/InMan Implementation Plan.md` — MVP scope, implementation sequence, edge function inventory, route map, seed data strategy
-- `InMan_ERD.mermaid` — Full entity relationship diagram with all 43 entities and relationships
+- `InMan_ERD.mermaid` — Full entity relationship diagram with 47 of the 48 entities and their relationships (missing only `Feedback`, Feature 13)
 - FigJam diagrams — Onboarding flow (Paths A+B, Path C) and ERD cluster diagrams in Figma

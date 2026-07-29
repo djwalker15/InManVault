@@ -117,10 +117,16 @@ Pure data operations — multiple inserts/updates within a single database trans
 
 | Function | Operations | Triggered By |
 |----------|-----------|-------------|
-| `add_inventory_item` | Insert InventoryItem + Flow + FlowPurchaseDetail. Set cached quantity. | Adding Inventory |
-| `restock_inventory_item` | Insert Flow + FlowPurchaseDetail + update InventoryItem cached quantity + last_unit_cost. | Restock sub-flow |
-| `move_inventory_item` | Update InventoryItem current_space_id + insert Flow + FlowTransferDetail. | Single item move |
-| `put_back_items` | Per checked item: update InventoryItem current_space_id + insert Flow + FlowTransferDetail. All in one transaction. | Put-back routine |
+| `record_purchase` (planned as `add_inventory_item`) | Insert InventoryItem + Flow + FlowPurchaseDetail. Set cached quantity. | Adding Inventory |
+| `restock_inventory` (planned as `restock_inventory_item`) | Insert Flow + FlowPurchaseDetail + update InventoryItem cached quantity + last_unit_cost. | Restock sub-flow |
+| `record_transfer` (planned as `move_inventory_item`) | Update InventoryItem current_space_id + insert Flow + FlowTransferDetail. | Single item move |
+| `put_back_items` | **Not built** — single-item put-back shipped instead (each put-back is an individual transfer via `record_transfer`). | Put-back routine |
+| `bulk_import_inventory` | Atomic-per-row import (spreadsheet **and** receipt scan); `p_source` tags Flow provenance; Product + InventoryItem + Flow + FlowPurchaseDetail per row. | Bulk import / receipt scan |
+| `record_adjustment` | Adjustment Flow (abs delta) + FlowAdjustmentDetail (`physical_count`); admin/owner-gated, row-locked. | Adjust count inline action |
+| `record_consumption` | Consumption Flow (no child detail); member-gated, row-locked, capped at on-hand. | Checking Stock "Use it" action |
+| `record_waste` | Waste Flow + slim WasteEvent + one reason-specific detail row (`p_details` jsonb); capped at on-hand. Supersedes the planned `log_waste` edge function. | Logging Waste (v1.1) |
+| `soft_delete_inventory_item` | Zero-out adjustment when quantity ≠ 0, then set `deleted_at`; admin/owner-gated SECURITY DEFINER. | Removing an Inventory Item |
+| `open_package` | PackageBreakEvent + `package_break` out-Flow + N `package_yield` in-Flows + per-leg FlowPackageBreakDetail + child `last_unit_cost`, asserting cost conservation. | Opening a Package |
 | `create_crew_with_owner` | Insert Crew + CrewMember (role = Admin). Set owner_id. | Onboarding Step 4 |
 | `accept_invite` | Update Invite (status = accepted) + insert CrewMember. | Onboarding Path B |
 | `stamp_space_template` | Read SpaceTemplate → insert all Space rows with correct parent_id chain. | Space Setup (deferred to post-launch with templates) |
@@ -138,7 +144,8 @@ Operations requiring external service calls.
 
 | Function | Phase | Why Edge Function |
 |----------|-------|-------------------|
-| `log_waste` | v1.1 | Photo upload may need storage API |
+| ~~`log_waste`~~ | v1.1 | **Shipped as the `record_waste` RPC** (see RPC table above); photo capture deferred until a storage bucket exists |
+| `open_package` | shipped 2026-07 | **Shipped as an atomic plpgsql RPC**, not an edge function (see RPC table above) |
 | `complete_batch` | v1.2 | Complex logic: output creation, cost derivation |
 | `checkout_shopping_trip` | v1.3 | Batch purchase Flows + restock resolution |
 | `complete_intake_session` | v1.3 | Batch processing + discrepancy handling |

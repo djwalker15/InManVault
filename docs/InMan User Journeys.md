@@ -2,7 +2,7 @@
 
 > **Generated:** March 31, 2026
 > **Purpose:** Map every user journey across the system — serves as the index for the `journeys/` folder
-> **Status:** ✅ 26 core journeys complete — 24 documented + 2 absorbed (#15 → #8, #19 → #7). +1 designed: #27 Opening a Package (pending implementation, see [[Feature 12 - Inventory Item Composition]]).
+> **Status:** ✅ 26 active journeys (#1–#28, 2 absorbed: #15 → #8, #19 → #7). #27 Opening a Package shipped 2026-07-29 (PR #36, see [[Feature 12 - Inventory Item Composition]]); #28 Removing an Inventory Item shipped alongside the outbound lifecycle slice.
 
 ---
 
@@ -24,7 +24,7 @@
 | 5 | [[Journey - Moving Items]] | ✅ Documented | Five scenarios: single item move (immediate Flow), put-back routine (batch displaced items), set home locations (batch unsorted), bulk reassign with preview (Space to Space), reorganize (space-centric or item-centric free-form redistribution). |
 | 6 | [[Journey - Checking Stock]] | ✅ Documented | Browse by [[Space]], browse by [[Category]], search, view item detail with inline expansion, inline actions (restock, move, waste, add to list), alerts summary (low stock, expired, displaced). |
 | 7 | [[Journey - Intake Session]] | ✅ Documented | Session-based workflow for receiving multiple items (replaces "Restocking"). Two modes: batch table (list-seeded with discrepancy tracking) and sequential (from-scratch). Covers personal post-shopping intake and commercial delivery receiving. Also covers journey #19 (Post-Shopping Intake). |
-| 27 | [[Journey - Opening a Package]] | 🎯 Designed | Break a sealed package [[InventoryItem]] into its child items — the inverse of a store-intent [[BatchEvent]]. Choose count → preview resolved children (merge-vs-create, unit convert) → review cost split (conservation-enforced) → confirm → atomic `open_package`. Data-model spec: [[Feature 12 - Inventory Item Composition]]. |
+| 27 | [[Journey - Opening a Package]] | ✅ Implemented | Break a sealed package [[InventoryItem]] into its child items — the inverse of a store-intent [[BatchEvent]]. Choose count → preview resolved children (merge-vs-create, unit convert) → review cost split (conservation-enforced) → confirm → atomic `open_package`. Data-model spec: [[Feature 12 - Inventory Item Composition]]. |
 | 28 | [[Journey - Removing an Inventory Item]] | ✅ Documented | Soft-delete an item from active tracking via `soft_delete_inventory_item` (admin/owner-gated RPC; zero-out adjustment when quantity ≠ 0; ledger history untouched; no restore in v1). Entry point: Remove inline action in [[Journey - Checking Stock]]. |
 
 ---
