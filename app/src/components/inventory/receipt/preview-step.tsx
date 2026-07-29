@@ -48,6 +48,8 @@ export function ReceiptPreviewStep({
 }: ReceiptPreviewStepProps) {
   // Which row's "search catalog" sheet is open (null = none).
   const [searchRowId, setSearchRowId] = useState<number | null>(null)
+  // Why the last import tap was blocked (null = not blocked).
+  const [blockedMessage, setBlockedMessage] = useState<string | null>(null)
   const unitSet = new Set(validUnits)
 
   function update(id: number, patch: Partial<RowState>) {
@@ -61,7 +63,29 @@ export function ReceiptPreviewStep({
   const included = rows.filter((r) => r.included)
   const ready = included.filter((r) => isImportable(r, unitSet))
   const unresolved = included.length - ready.length
-  const canImport = !importing && ready.length > 0 && unresolved === 0 && !!spaceId
+
+  // Explain why the import can't run instead of silently disabling the
+  // CTA (a disabled-only gate reads as a dead button).
+  function handleImportClick() {
+    if (!spaceId) {
+      setBlockedMessage('Pick a space to shelve these items.')
+      return
+    }
+    if (ready.length === 0) {
+      setBlockedMessage('Nothing to add yet — include at least one line.')
+      return
+    }
+    if (unresolved > 0) {
+      setBlockedMessage(
+        unresolved === 1
+          ? '1 line still needs review — fix or exclude it above.'
+          : `${unresolved} lines still need review — fix or exclude them above.`,
+      )
+      return
+    }
+    setBlockedMessage(null)
+    onImport()
+  }
 
   const searchRow = rows.find((r) => r.id === searchRowId) ?? null
 
@@ -96,12 +120,21 @@ export function ReceiptPreviewStep({
         ))}
       </ul>
 
+      {blockedMessage && (
+        <p
+          role="alert"
+          className="rounded-md bg-red-50 px-3 py-2 font-body text-sm text-red-700"
+        >
+          {blockedMessage}
+        </p>
+      )}
+
       <CtaTray sticky={false}>
         <PrimaryButton
           arrow
           type="button"
-          disabled={!canImport}
-          onClick={onImport}
+          disabled={importing}
+          onClick={handleImportClick}
         >
           {importing
             ? 'Adding…'

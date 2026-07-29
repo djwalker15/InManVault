@@ -51,9 +51,9 @@ describe('InventoryForm', () => {
     expect(screen.getByLabelText(/^unit$/i)).toBeInTheDocument()
   })
 
-  it('disables the submit button until quantity + unit + current space are valid', async () => {
+  it('explains a missing current location on submit instead of silently disabling', async () => {
     mockClerk({ user: { id: 'user_1' } })
-    makeSupabaseMock({
+    const sb = makeSupabaseMock({
       categories: { select: { data: [], error: null } },
       unit_definitions: { select: { data: sampleUnits, error: null } },
       spaces: { select: { data: sampleSpaces, error: null } },
@@ -71,11 +71,48 @@ describe('InventoryForm', () => {
       expect(screen.getByLabelText('Current location')).toBeInTheDocument()
     })
     const submit = screen.getByRole('button', { name: /add to inventory/i })
-    expect(submit).toBeDisabled()
+    expect(submit).toBeEnabled()
+    fireEvent.click(submit)
+    await waitFor(() => {
+      expect(
+        screen.getByText('Pick a current location for this item.'),
+      ).toBeInTheDocument()
+    })
+    expect(sb.rpc).not.toHaveBeenCalled()
+  })
+
+  it('explains an invalid quantity on submit and does not call the RPC', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    const sb = makeSupabaseMock({
+      categories: { select: { data: [], error: null } },
+      unit_definitions: { select: { data: sampleUnits, error: null } },
+      spaces: { select: { data: sampleSpaces, error: null } },
+    })
+    const selection: Selection = { kind: 'product', product }
+    render(
+      <InventoryForm
+        crewId="crew_abc"
+        selection={selection}
+        onSaved={() => {}}
+        onCancel={() => {}}
+      />,
+    )
+    await waitFor(() => {
+      expect(screen.getByLabelText('Current location')).toBeInTheDocument()
+    })
     fireEvent.change(screen.getByLabelText('Current location'), {
       target: { value: 'a' },
     })
-    expect(submit).toBeEnabled()
+    fireEvent.change(screen.getByLabelText(/^quantity$/i), {
+      target: { value: '0' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /add to inventory/i }))
+    await waitFor(() => {
+      expect(
+        screen.getByText('Enter a quantity greater than zero.'),
+      ).toBeInTheDocument()
+    })
+    expect(sb.rpc).not.toHaveBeenCalled()
   })
 
   it('calls record_purchase RPC with the form values atomically', async () => {

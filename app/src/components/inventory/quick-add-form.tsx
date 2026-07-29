@@ -145,7 +145,20 @@ export function QuickAddForm({ crewId, userId, onSaved }: QuickAddFormProps) {
 
   async function handleSubmit(e?: FormEvent) {
     e?.preventDefault()
-    if (!valid) return
+    // Tell the user why the form won't submit instead of silently
+    // disabling the CTA (the disabled-only gate read as a dead button).
+    if (!valid) {
+      if (!hasProduct) {
+        setError('Type or pick a product first.')
+      } else if (!quantityValid) {
+        setError('Enter a quantity greater than zero.')
+      } else if (!unit) {
+        setError('Pick a unit for this item.')
+      } else {
+        setError('Pick a location for this item.')
+      }
+      return
+    }
     setError(null)
     setSubmitting(true)
     try {
@@ -326,7 +339,7 @@ export function QuickAddForm({ crewId, userId, onSaved }: QuickAddFormProps) {
         <PrimaryButton
           arrow
           type="button"
-          disabled={submitting || !valid}
+          disabled={submitting}
           onClick={() => void handleSubmit()}
         >
           {submitting ? 'Adding…' : 'Add to inventory'}
