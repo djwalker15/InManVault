@@ -26,6 +26,22 @@ test.describe('Adding Inventory — Manual search/create', () => {
       .click()
 
     await page.getByPlaceholder('Heinz tomato paste').fill(productName)
+
+    // Brand autocomplete is fed by a live query, so this is the only place the
+    // real RLS + PostgREST path gets exercised — jsdom only ever sees a stub.
+    const brandInput = page.getByLabel(/brand/i)
+    const brandListId = await brandInput.getAttribute('list')
+    expect(brandListId).toBeTruthy()
+    const brandOptions = page.locator(`datalist#${brandListId} option`)
+    // The seeded master catalog carries brands even for a brand-new crew.
+    await expect.poll(() => brandOptions.count()).toBeGreaterThan(0)
+
+    // A catalog brand typed in the wrong case snaps to the catalog spelling.
+    const canonicalBrand = (await brandOptions.first().getAttribute('value'))!
+    await brandInput.fill(canonicalBrand.toUpperCase())
+    await brandInput.blur()
+    await expect(brandInput).toHaveValue(canonicalBrand)
+
     await page.getByRole('button', { name: /^create product$/i }).click()
 
     // Details form: quantity (1) and unit (count) default; pick the Premises.

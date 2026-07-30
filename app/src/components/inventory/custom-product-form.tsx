@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useId, useState, type FormEvent } from 'react'
 import { CtaTray, Field, PrimaryButton, TextButton } from '@/components/ds'
 import { useSupabase } from '@/lib/supabase'
 import type { ProductRow } from './types'
+import { useCrewBrands } from './use-crew-brands'
 
 interface CustomProductFormProps {
   crewId: string
@@ -44,6 +45,8 @@ export function CustomProductForm({
   const [units, setUnits] = useState<UnitRow[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { brands, canonicalize } = useCrewBrands()
+  const brandListId = useId()
 
   useEffect(() => {
     let cancelled = false
@@ -148,7 +151,16 @@ export function CustomProductForm({
         value={brand}
         onValueChange={setBrand}
         maxLength={120}
+        list={brandListId}
+        // Typing a brand that already exists in a different case would
+        // fragment search, so settle on the spelling already in the catalog.
+        onBlur={() => setBrand((b) => canonicalize(b))}
       />
+      <datalist id={brandListId}>
+        {brands.map((b) => (
+          <option key={b} value={b} />
+        ))}
+      </datalist>
       <Field
         label="BARCODE (OPTIONAL)"
         placeholder="UPC / EAN"
