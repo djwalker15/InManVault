@@ -18,7 +18,23 @@ interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
-  { label, hint, error, leading, trailing, onValueChange, onChange, id, className, ...rest },
+  {
+    label,
+    hint,
+    error,
+    leading,
+    trailing,
+    onValueChange,
+    // Pulled out of `rest` on purpose: `{...rest}` is spread after these
+    // handlers below, so leaving them in would let a caller's version replace
+    // the wrapper's and silently kill the focus styling.
+    onChange,
+    onFocus,
+    onBlur,
+    id,
+    className,
+    ...rest
+  },
   ref,
 ) {
   const generated = useId()
@@ -59,11 +75,11 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
           }
           onFocus={(e) => {
             setFocused(true)
-            rest.onFocus?.(e)
+            onFocus?.(e)
           }}
           onBlur={(e) => {
             setFocused(false)
-            rest.onBlur?.(e)
+            onBlur?.(e)
           }}
           onChange={(e) => {
             onValueChange?.(e.target.value)
