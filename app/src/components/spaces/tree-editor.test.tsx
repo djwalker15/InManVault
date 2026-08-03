@@ -57,6 +57,17 @@ describe('TreeEditor', () => {
     ).toBeInTheDocument()
   })
 
+  it('highlights rows whose ids are in recentIds', () => {
+    const m = makeMocks()
+    render(
+      <TreeEditor nodes={baseNodes} recentIds={new Set(['z'])} {...m} />,
+    )
+    const flagged = screen.getByText('Back').closest('div')
+    expect(flagged?.className).toContain('animate-space-added')
+    const plain = screen.getByText('Kitchen').closest('div')
+    expect(plain?.className).not.toContain('animate-space-added')
+  })
+
   it('add-child uses the smart default child type for the parent', async () => {
     const m = makeMocks()
     render(<TreeEditor nodes={baseNodes} {...m} />)

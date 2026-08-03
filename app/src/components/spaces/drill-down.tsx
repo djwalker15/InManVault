@@ -29,6 +29,8 @@ interface SpacesDrillDownProps {
   onReclassify: (space_id: string, unit_type: UnitType) => Promise<void>
   onDelete: (space_ids: string[]) => Promise<void>
   emptyState?: string
+  /** Ids of just-created spaces — their cards flash and scroll into view. */
+  recentIds?: ReadonlySet<string>
 }
 
 type SheetState = { type: 'menu' | SheetAction; targetId: string | null }
@@ -51,6 +53,7 @@ export function SpacesDrillDown({
   onReclassify,
   onDelete,
   emptyState,
+  recentIds,
 }: SpacesDrillDownProps) {
   const [focusId, setFocusId] = useState<string | null>(null)
   const [sheet, setSheet] = useState<SheetState | null>(null)
@@ -224,6 +227,7 @@ export function SpacesDrillDown({
                   kids={childrenByParent.get(c.space_id) ?? []}
                   onOpen={openNode}
                   onMenu={openMenu}
+                  isNew={recentIds?.has(c.space_id) ?? false}
                 />
               ))}
             </div>

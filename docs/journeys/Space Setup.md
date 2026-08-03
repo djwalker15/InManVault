@@ -207,6 +207,7 @@ The UI transitions from the guided prompt-and-response mode to the **full tree e
 - **Expand/collapse** → navigate large trees
 - The **explainer** is always accessible via "?" icon
 - **Tooltips** remain on every unit_type dropdown
+- **New-node feedback** — a just-added row flashes a brief sage highlight (~1.5 s, auto-clearing) and scrolls into view; suppressed under `prefers-reduced-motion` (scroll still happens)
 
 ### Smart Default Logic
 
@@ -268,6 +269,7 @@ Drilling into a space **scopes the view to that space and hides unrelated siblin
 - Each level renders its immediate children as a **grid of cards** (a generated warm-gradient "photo" banner per space — a placeholder for the future real-photo vision). The space you're inside gets a **hero banner**.
 - All manage actions stay reachable via **bottom sheets**: a card's `⋯` (or the header `⋯` for the current scope) opens Add-inside / Rename / Change-type / Delete. The header `+` adds a child to the current scope, or a **new premises** at the root.
 - Validation reuses the same rules as the tree editor (allowed child types, smart defaults, reclassify suggestions, cascade delete).
+- **New-node feedback** — a just-added card flashes a brief sage highlight (~1.5 s, auto-clearing) and scrolls into view, same as the tree editor's row treatment; suppressed under `prefers-reduced-motion`.
 
 Implementation: `app/src/components/spaces/drill-down.tsx` (+ `drill-down-cards.tsx`, `drill-down-sheets.tsx`, `space-photo.ts`), on the `Sheet` DS primitive (`app/src/components/ds/sheet.tsx`).
 

@@ -23,6 +23,7 @@ import { Tree } from '@/components/spaces/tree'
 import { TreeEditor } from '@/components/spaces/tree-editor'
 import type { SpaceNode, UnitType } from '@/components/spaces/types'
 import { useActiveCrew } from '@/lib/active-crew'
+import { useRecentIds } from '@/lib/recent-ids'
 import { useSupabase } from '@/lib/supabase'
 
 type Phase = 'explainer' | 'premises' | 'guided' | 'editor'
@@ -42,6 +43,7 @@ export default function OnboardingSpacesPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const recent = useRecentIds()
 
   // Pull existing spaces for the crew so the tree reflects reality on remount.
   useEffect(() => {
@@ -241,6 +243,7 @@ export default function OnboardingSpacesPage() {
             <div className="rounded-2xl bg-paper-100 p-4">
               <TreeEditor
                 nodes={nodes}
+                recentIds={recent.ids}
                 onAddChild={async (input) => {
                   if (!user || !crewId) throw new Error('Crew not loaded')
                   const { data, error: insertError } = await supabase
@@ -260,6 +263,7 @@ export default function OnboardingSpacesPage() {
                   if (!data) throw new Error('Insert returned no row')
                   const row = data as SpaceNode
                   setNodes((prev) => [...prev, row])
+                  recent.add(row.space_id)
                   return row
                 }}
                 onAddSibling={async (input) => {
@@ -281,6 +285,7 @@ export default function OnboardingSpacesPage() {
                   if (!data) throw new Error('Insert returned no row')
                   const row = data as SpaceNode
                   setNodes((prev) => [...prev, row])
+                  recent.add(row.space_id)
                   return row
                 }}
                 onRename={async (space_id, name) => {
