@@ -52,6 +52,8 @@ const KNOWN_UNITS = [
   'cup',
   'fl_oz',
   'gal',
+  'qt',
+  'pt',
   'count',
   'pkg',
 ] as const
@@ -67,6 +69,8 @@ const UNIT_ALIASES: Record<string, string> = {
   dz: 'count',
   lb: 'lbs',
   gallon: 'gal',
+  quart: 'qt',
+  pint: 'pt',
   'fl oz': 'fl_oz',
   floz: 'fl_oz',
 }

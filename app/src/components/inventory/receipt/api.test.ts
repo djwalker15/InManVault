@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { isImportable, normalizeRaw, rowIssues, toPayloadRows } from './api'
 import { toRowState, type ReceiptRow, type RowState } from './types'
 
-const VALID_UNITS = new Set(['count', 'oz', 'kg', 'gal'])
+const VALID_UNITS = new Set(['count', 'oz', 'kg', 'gal', 'qt', 'pt'])
 
 const row = (over: Partial<RowState> = {}): RowState => ({
   id: 0,
@@ -56,6 +56,11 @@ describe('rowIssues', () => {
 
   it('accepts a gallon row once gal is a tracked unit', () => {
     expect(rowIssues(row({ unit: 'gal' }), VALID_UNITS)).toEqual([])
+  })
+
+  it('accepts quart and pint rows once qt/pt are tracked units', () => {
+    expect(rowIssues(row({ unit: 'qt' }), VALID_UNITS)).toEqual([])
+    expect(rowIssues(row({ unit: 'pt' }), VALID_UNITS)).toEqual([])
   })
 
   it('names the unknown unit instead of a generic message', () => {

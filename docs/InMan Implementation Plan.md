@@ -87,7 +87,7 @@ All MVP tables built in dependency order. Auth, invites, spaces, and inventory s
 | 1.7 | `product_groups` | categories, crews (nullable crew_id) |
 | 1.8 | `products` | categories, product_groups, crews (nullable crew_id) |
 | 1.9 | `inventory_items` | products, spaces, categories, crews |
-| 1.10 | `unit_definitions` | None + seed 12 rows |
+| 1.10 | `unit_definitions` | None + seed 15 rows |
 | 1.11 | `flows` | inventory_items, crews, users |
 | 1.12 | `flow_purchase_details` | flows |
 | 1.13 | `flow_transfer_details` | flows, spaces |
@@ -203,8 +203,8 @@ Operations requiring external service calls.
 
 Inserted automatically during database migrations.
 
-**`unit_definitions`** — 12 rows ✅:
-g, kg, oz, lbs (weight → base: g), ml, L, tsp, tbsp, cup, fl_oz (volume → base: fl_oz), count, pkg (count → base: count)
+**`unit_definitions`** — 15 rows ✅:
+g, kg, oz, lbs (weight → base: g), ml, L, tsp, tbsp, cup, fl_oz, gal, qt, pt (volume → base: fl_oz), count, pkg (count → base: count)
 
 **`categories`** — 20 global defaults (`crew_id` = null) ✅:
 Produce, Dairy & Eggs, Meat & Poultry, Seafood, Bakery & Bread, Grains & Pasta, Canned & Jarred, Condiments & Sauces, Spices & Seasonings, Oils & Vinegars, Baking, Snacks, Beverages, Frozen, Deli & Prepared, Liquor, Beer, Wine, Mixers & Bar Supplies, Cleaning & Supplies

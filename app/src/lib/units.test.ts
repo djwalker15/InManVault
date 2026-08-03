@@ -14,6 +14,8 @@ const units = buildUnitMap([
   { unit: 'cup', unit_category: 'volume', to_base_factor: 8 },
   { unit: 'L', unit_category: 'volume', to_base_factor: 33.814 },
   { unit: 'gal', unit_category: 'volume', to_base_factor: 128 },
+  { unit: 'qt', unit_category: 'volume', to_base_factor: 32 },
+  { unit: 'pt', unit_category: 'volume', to_base_factor: 16 },
   { unit: 'count', unit_category: 'count', to_base_factor: 1 },
 ])
 
@@ -32,6 +34,15 @@ describe('convertQuantity', () => {
     expect(convertQuantity(1, 'gal', 'cup', units)).toBe(16)
     expect(convertQuantity(1, 'gal', 'L', units)).toBeCloseTo(3.7854, 3)
     expect(convertQuantity(2, 'L', 'gal', units)).toBeCloseTo(0.5283, 3)
+  })
+
+  it('converts quarts and pints within the volume category', () => {
+    expect(convertQuantity(1, 'qt', 'fl_oz', units)).toBe(32)
+    expect(convertQuantity(1, 'pt', 'fl_oz', units)).toBe(16)
+    expect(convertQuantity(1, 'qt', 'pt', units)).toBe(2)
+    expect(convertQuantity(1, 'gal', 'qt', units)).toBe(4)
+    expect(convertQuantity(1, 'pt', 'cup', units)).toBe(2)
+    expect(convertQuantity(1, 'L', 'qt', units)).toBeCloseTo(1.0567, 3)
   })
 
   it('blocks cross-category conversion (returns null)', () => {
