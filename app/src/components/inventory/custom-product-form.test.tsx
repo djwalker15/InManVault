@@ -164,6 +164,112 @@ describe('CustomProductForm — brand autocomplete', () => {
   })
 })
 
+/**
+ * The mock serves one canned response per table, so the brand fetch and the
+ * variant fetch both read these rows; each hook plucks its own column.
+ */
+const variantRows = [
+  { brand: 'LaCroix', variant: 'Lime' },
+  { brand: 'LaCroix', variant: 'lime' },
+  { brand: 'LaCroix', variant: 'Pamplemousse' },
+  { brand: 'Heinz', variant: null },
+]
+
+function variantOptions(container: HTMLElement): string[] {
+  const list = screen
+    .getByLabelText(/variant/i)
+    .getAttribute('list')
+  const datalist = container.querySelector(`datalist#${CSS.escape(list ?? '')}`)
+  return Array.from(datalist?.querySelectorAll('option') ?? []).map(
+    (o) => o.value,
+  )
+}
+
+describe('CustomProductForm — variant field', () => {
+  it('suggests previously used variants, deduped and sorted', async () => {
+    mockBrands(variantRows)
+    const { container } = renderForm()
+
+    await waitFor(() => {
+      expect(variantOptions(container).length).toBeGreaterThan(0)
+    })
+    // 'lime' collapses into 'Lime' (first spelling wins) and the null
+    // variant contributes nothing.
+    expect(variantOptions(container)).toEqual(['Lime', 'Pamplemousse'])
+  })
+
+  it('snaps a typed variant onto the existing spelling on blur', async () => {
+    mockBrands(variantRows)
+    const { container } = renderForm()
+    await waitFor(() => {
+      expect(variantOptions(container).length).toBeGreaterThan(0)
+    })
+
+    const input = screen.getByLabelText(/variant/i)
+    fireEvent.change(input, { target: { value: 'LIME' } })
+    fireEvent.blur(input)
+
+    await waitFor(() => {
+      expect(input).toHaveValue('Lime')
+    })
+  })
+
+  it('submits the variant, and null when the field is left blank', async () => {
+    const sb = mockBrands(variantRows)
+    sb.tables.products.single.mockImplementation(() => ({
+      then: (
+        onFulfilled: (v: { data: unknown; error: null }) => unknown,
+      ) =>
+        Promise.resolve({
+          data: {
+            product_id: 'prod_new',
+            crew_id: 'crew_abc',
+            name: 'Sparkling water',
+            brand: 'LaCroix',
+            variant: 'Lime',
+            barcode: null,
+            image_url: null,
+            size_value: null,
+            size_unit: null,
+            default_category_id: null,
+          },
+          error: null,
+        }).then(onFulfilled),
+    }))
+
+    const { container } = renderForm()
+    await waitFor(() => {
+      expect(variantOptions(container).length).toBeGreaterThan(0)
+    })
+
+    fireEvent.change(screen.getByLabelText(/product name/i), {
+      target: { value: 'Sparkling water' },
+    })
+    fireEvent.change(screen.getByLabelText(/variant/i), {
+      target: { value: 'Lime' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /create product/i }))
+
+    await waitFor(() => {
+      expect(sb.tables.products.insert).toHaveBeenCalledWith(
+        expect.objectContaining({ variant: 'Lime' }),
+      )
+    })
+
+    // A blank field must reach the database as null, not ''.
+    sb.tables.products.insert.mockClear()
+    fireEvent.change(screen.getByLabelText(/variant/i), {
+      target: { value: '   ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /create product/i }))
+    await waitFor(() => {
+      expect(sb.tables.products.insert).toHaveBeenCalledWith(
+        expect.objectContaining({ variant: null }),
+      )
+    })
+  })
+})
+
 describe('CustomProductForm — Field focus styling', () => {
   it('keeps the sage focus bar working on a field that also passes onBlur', async () => {
     mockBrands()
