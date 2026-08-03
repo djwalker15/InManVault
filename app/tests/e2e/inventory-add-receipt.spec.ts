@@ -94,9 +94,17 @@ test.describe('Adding Inventory — Receipt scan', () => {
       buffer: PNG_1X1,
     })
 
-    // Preview shows both lines needing review; import is gated.
+    // Preview shows both lines needing review. The CTA stays enabled
+    // (submit-and-explain, not a silently dead button): clicking it while
+    // no line is importable surfaces the blocked reason and imports nothing.
+    // With *every* line unresolved, ready.length === 0 wins over the
+    // "N lines still need review" branch in preview-step's handleImportClick.
     await expect(page.getByText(/2 need review/i)).toBeVisible()
-    await expect(page.getByRole('button', { name: /^Add /i })).toBeDisabled()
+    // The route seeds the space picker with the Premises root asynchronously;
+    // wait for it so the click reports the review gate, not a missing space.
+    await expect(page.getByLabel('Shelve everything to')).toHaveValue(/.+/)
+    await page.getByRole('button', { name: /^Add /i }).click()
+    await expect(page.getByRole('alert')).toHaveText(/nothing to add yet/i)
 
     // Explicitly create a product for each unresolved line.
     await page
@@ -106,7 +114,7 @@ test.describe('Adding Inventory — Receipt scan', () => {
       .getByRole('button', { name: new RegExp(`Create.*${bravo}`) })
       .click()
 
-    // Both resolved → import enabled → commit via the real RPC.
+    // Both resolved → the CTA reads "Add 2 items" → commit via the real RPC.
     const addButton = page.getByRole('button', { name: /add 2 items/i })
     await expect(addButton).toBeEnabled()
     await addButton.click()
