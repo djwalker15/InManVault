@@ -66,6 +66,7 @@ The system walks the user through one complete branch from premises to the deepe
 - **Smart defaults** pre-select the most likely `unit_type` for the child, but the user can override via dropdown
 - **Tooltips** explain each unit type in context
 - **Prompts** ask whether to go **wider** (add siblings) or **deeper** (add children)
+- A persistent **"Skip to editor"** action (low-emphasis, below the step CTAs) exits the guided flow from **any** step straight to Phase 4, inserting nothing — for users who already know their hierarchy or just applied a template
 
 ### Step 3a — Add an Area
 
@@ -196,7 +197,7 @@ Confirmation message: "Great — you've built your first branch! Now you can see
 
 ## Phase 4 — Handoff to Tree Editor
 
-The UI transitions from the guided prompt-and-response mode to the **full tree editor**. The tree they've built is visible and interactive.
+The UI transitions from the guided prompt-and-response mode to the **full tree editor**. The tree they've built is visible and interactive. Reached either by finishing the first branch (above) or via **"Skip to editor"** from any Phase 3 step — in the latter case the tree shows whatever exists so far (possibly just the premises).
 
 ### Capabilities
 - **Click any node** → add children (smart defaults for child type based on parent's unit_type)

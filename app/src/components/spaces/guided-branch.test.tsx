@@ -121,6 +121,51 @@ describe('GuidedBranch', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('"Skip to editor" on the first step calls onComplete without inserting', async () => {
+    const onCreate = makeOnCreate()
+    const onComplete = vi.fn()
+    render(
+      <GuidedBranch
+        premises={premises}
+        onCreate={onCreate}
+        onComplete={onComplete}
+      />,
+    )
+
+    expect(screen.getByText(/step 1 of 6 · area/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /skip to editor/i }))
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalledTimes(1)
+    })
+    expect(onCreate).not.toHaveBeenCalled()
+  })
+
+  it('"Skip to editor" stays available mid-flow', async () => {
+    const onCreate = makeOnCreate()
+    render(
+      <GuidedBranch
+        premises={premises}
+        onCreate={onCreate}
+        onComplete={() => {}}
+      />,
+    )
+
+    for (const value of ['Kitchen', 'Back']) {
+      fireEvent.change(screen.getByRole('textbox'), { target: { value } })
+      fireEvent.click(
+        screen.getByRole('button', { name: /add and go deeper/i }),
+      )
+      await waitFor(() => {
+        expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('')
+      })
+    }
+
+    expect(screen.getByText(/step 3 of 6 · section/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /skip to editor/i }),
+    ).toBeInTheDocument()
+  })
+
   it('shows Skip on container and lets the user jump to shelf', async () => {
     const onCreate = makeOnCreate()
     render(

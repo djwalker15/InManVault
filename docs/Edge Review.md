@@ -201,6 +201,7 @@ Use this document to verify each edge makes conceptual sense, and to annotate wi
 | 9 | Step 3f — Add a Shelf | After the First Branch |  |
 | 10 | After the First Branch | Phase 4 — Tree Editor |  |
 | 11 | Phase 4 — Tree Editor | Phase 5 — Template Option | Use a template |
+| 12 | Step 3a — Add an Area | Phase 4 — Tree Editor | Skip to editor (any step) |
 
 #### 1. journeys/Space Setup.md → Phase 1 — The Explainer
 
@@ -267,6 +268,12 @@ Use this document to verify each edge makes conceptual sense, and to annotate wi
 **Data Flow:**
 
 **UI Detail:**
+
+#### 12. Step 3a — Add an Area → Phase 4 — Tree Editor (Skip to editor, any step)
+
+**Data Flow:** none — no rows inserted; onboarding phase state → `'editor'`.
+
+**UI Detail:** persistent `TextButton` at the bottom of the guided-step CTA stack, rendered at every level, disabled while a save is in flight.
 
 ### Entity References
 

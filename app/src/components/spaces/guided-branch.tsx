@@ -240,6 +240,11 @@ export function GuidedBranch({
             {isLastLevel ? "I'm done" : 'Skip this level'}
           </TextButton>
         )}
+        {/* Global escape hatch — exits the guided flow without inserting.
+            Calls onComplete directly: handleSkip is gated on canSkip. */}
+        <TextButton type="button" onClick={onComplete} disabled={submitting}>
+          Skip to editor
+        </TextButton>
       </CtaTray>
     </form>
   )
