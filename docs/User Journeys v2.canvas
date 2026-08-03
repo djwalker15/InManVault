@@ -472,6 +472,7 @@
 		{"id":"b000000000000114","fromNode":"b000000000000034","fromSide":"bottom","toNode":"b000000000000035","toSide":"top"},
 		{"id":"b000000000000115","fromNode":"b000000000000035","fromSide":"bottom","toNode":"b000000000000036","toSide":"top"},
 		{"id":"b000000000000116","fromNode":"b000000000000036","fromSide":"right","toNode":"b000000000000040","toSide":"left"},
+		{"id":"b000000000000141","fromNode":"b000000000000030","fromSide":"right","toNode":"b000000000000040","toSide":"left","label":"Skip to editor (any step)"},
 		{"id":"b000000000000117","fromNode":"b000000000000040","fromSide":"bottom","toNode":"b000000000000041","toSide":"top","label":"Use a template"},
 		{"id":"b000000000000120","fromNode":"b000000000000030","fromSide":"right","toNode":"b000000000000050","toSide":"left"},
 		{"id":"b000000000000121","fromNode":"b000000000000021","fromSide":"bottom","toNode":"b000000000000050","toSide":"top"},
