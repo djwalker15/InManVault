@@ -52,6 +52,20 @@ describe('SpacesDrillDown', () => {
     expect(screen.queryByText('Boathouse')).toBeNull()
   })
 
+  it('highlights cards whose ids are in recentIds', () => {
+    render(
+      <SpacesDrillDown
+        nodes={nodes}
+        recentIds={new Set(['p1'])}
+        {...makeMocks()}
+      />,
+    )
+    const flagged = screen.getByText('My House').closest('[role="button"]')
+    expect(flagged?.className).toContain('animate-space-added')
+    const plain = screen.getByText('Lake House').closest('[role="button"]')
+    expect(plain?.className).not.toContain('animate-space-added')
+  })
+
   it('drilling into a premises scopes to its children and hides siblings', () => {
     render(<SpacesDrillDown nodes={nodes} {...makeMocks()} />)
     fireEvent.click(screen.getByText('My House'))

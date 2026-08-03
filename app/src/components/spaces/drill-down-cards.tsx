@@ -79,15 +79,23 @@ interface ChildCardProps {
   kids: SpaceNode[]
   onOpen: (node: SpaceNode) => void
   onMenu: (id: string) => void
+  /** Just created — flash and scroll into view. */
+  isNew?: boolean
 }
 
-export function ChildCard({ node, kids, onOpen, onMenu }: ChildCardProps) {
+export function ChildCard({ node, kids, onOpen, onMenu, isNew }: ChildCardProps) {
   const meta = UNIT_TYPE_LABEL[node.unit_type]
   const glyph = UNIT_TYPE_GLYPH[node.unit_type]
   const hasKids = kids.length > 0
+  const cardRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    // Optional call: jsdom has no scrollIntoView.
+    if (isNew) cardRef.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  }, [isNew])
 
   return (
     <div
+      ref={cardRef}
       role="button"
       tabIndex={0}
       onClick={() => onOpen(node)}
@@ -101,6 +109,7 @@ export function ChildCard({ node, kids, onOpen, onMenu }: ChildCardProps) {
       className={cn(
         'group flex cursor-pointer flex-col overflow-hidden rounded-2xl bg-paper-50',
         'shadow-ambient-sm transition active:scale-[0.985] hover:shadow-ambient-md',
+        isNew && 'animate-space-added',
       )}
     >
       <div

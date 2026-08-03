@@ -15,6 +15,7 @@ import { SpacesDrillDown } from '@/components/spaces/drill-down'
 import { TreeEditor } from '@/components/spaces/tree-editor'
 import type { SpaceNode, UnitType } from '@/components/spaces/types'
 import { useActiveCrew } from '@/lib/active-crew'
+import { useRecentIds } from '@/lib/recent-ids'
 import { useSupabase } from '@/lib/supabase'
 
 type SpacesView = 'cards' | 'tree'
@@ -50,6 +51,7 @@ export default function SpacesPage() {
   const [refetchTick, setRefetchTick] = useState(0)
   const [toast, setToast] = useState<string | null>(null)
   const [view, setView] = useState<SpacesView>(readViewPreference)
+  const recent = useRecentIds()
 
   function chooseView(next: SpacesView) {
     setView(next)
@@ -132,6 +134,7 @@ export default function SpacesPage() {
     if (!data) throw new Error('Insert returned no row')
     const row = data as SpaceNode
     setNodes((prev) => [...prev, row])
+    recent.add(row.space_id)
     return row
   }
 
@@ -239,6 +242,7 @@ export default function SpacesPage() {
                 onReclassify={reclassify}
                 onDelete={softDelete}
                 emptyState="Loading…"
+                recentIds={recent.ids}
               />
             ) : (
               <TreeEditor
@@ -249,6 +253,7 @@ export default function SpacesPage() {
                 onReclassify={reclassify}
                 onDelete={softDelete}
                 emptyState="Loading…"
+                recentIds={recent.ids}
               />
             )}
           </>

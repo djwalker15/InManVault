@@ -97,12 +97,27 @@
     opacity: 1;
   }
 }
+@keyframes space-added {
+  from {
+    box-shadow: 0 0 0 2px var(--color-sage-300);
+    background-color: color-mix(in srgb, var(--color-sage-100) 40%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 0 transparent;
+    background-color: transparent;
+  }
+}
 @media (prefers-reduced-motion: no-preference) {
   .animate-sheet-up {
     animation: sheet-up 0.32s cubic-bezier(0.32, 0.72, 0, 1) both;
   }
   .animate-scope-in {
     animation: scope-in 0.26s cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+  /* No fill mode: the flash must revert to the element's own classes
+     (e.g. the card's bg-paper-50) once it finishes. */
+  .animate-space-added {
+    animation: space-added 1.5s cubic-bezier(0.32, 0.72, 0, 1);
   }
 }
 

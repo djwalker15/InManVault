@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import {
   ChevronDown,
   ChevronRight,
@@ -39,6 +39,8 @@ interface TreeEditorProps {
   onDelete: (space_ids: string[]) => Promise<void>
   onReclassify: (space_id: string, unit_type: UnitType) => Promise<void>
   emptyState?: string
+  /** Ids of just-created spaces — their rows flash and scroll into view. */
+  recentIds?: ReadonlySet<string>
 }
 
 type Action = 'add-child' | 'add-sibling' | 'rename' | 'delete' | 'reclassify'
@@ -79,6 +81,7 @@ export function TreeEditor({
   onDelete,
   onReclassify,
   emptyState,
+  recentIds,
 }: TreeEditorProps) {
   const index = useMemo(() => buildIndex(nodes), [nodes])
   const roots = index.childrenByParent.get(null) ?? []
@@ -105,6 +108,7 @@ export function TreeEditor({
           onRename={onRename}
           onDelete={onDelete}
           onReclassify={onReclassify}
+          recentIds={recentIds}
         />
       ))}
     </ol>
@@ -121,6 +125,7 @@ interface TreeRowProps {
   onRename: TreeEditorProps['onRename']
   onDelete: TreeEditorProps['onDelete']
   onReclassify: TreeEditorProps['onReclassify']
+  recentIds?: ReadonlySet<string>
 }
 
 function TreeRow({
@@ -133,12 +138,19 @@ function TreeRow({
   onRename,
   onDelete,
   onReclassify,
+  recentIds,
 }: TreeRowProps) {
   const children = index.childrenByParent.get(node.space_id) ?? []
   const [expanded, setExpanded] = useState(true)
   const [action, setAction] = useState<Action | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const isNew = recentIds?.has(node.space_id) ?? false
+  const rowRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    // Optional call: jsdom has no scrollIntoView.
+    if (isNew) rowRef.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  }, [isNew])
 
   function closeAction() {
     setAction(null)
@@ -231,7 +243,8 @@ function TreeRow({
       data-depth={depth}
     >
       <div
-        className="flex items-center gap-2.5 rounded-md py-1"
+        ref={rowRef}
+        className={`flex items-center gap-2.5 rounded-md py-1${isNew ? ' animate-space-added' : ''}`}
         style={{ paddingLeft: `${depth * 16}px` }}
       >
         {children.length > 0 ? (
@@ -319,6 +332,7 @@ function TreeRow({
               onRename={onRename}
               onDelete={onDelete}
               onReclassify={onReclassify}
+              recentIds={recentIds}
             />
           ))}
         </ol>
