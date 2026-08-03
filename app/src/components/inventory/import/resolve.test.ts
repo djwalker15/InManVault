@@ -12,6 +12,7 @@ const product = (over: Partial<ProductRow>): ProductRow => ({
   crew_id: null,
   name: 'Tomato Paste',
   brand: 'Heinz',
+  variant: null,
   barcode: '012345678905',
   image_url: null,
   size_value: null,

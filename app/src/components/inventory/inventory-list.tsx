@@ -8,6 +8,10 @@ import {
 } from './inventory-filters-state'
 import { InventoryRowDetails } from './row-details'
 import {
+  PRODUCT_COLUMNS,
+  type ProductRow as SharedProductRow,
+} from './types'
+import {
   ALERT_LABEL,
   alertScore,
   deriveAlerts,
@@ -28,18 +32,7 @@ interface InventoryItemRow {
   notes: string | null
 }
 
-interface ProductRow {
-  product_id: string
-  crew_id: string | null
-  name: string
-  brand: string | null
-  barcode: string | null
-  image_url: string | null
-  size_value: number | null
-  size_unit: string | null
-  default_category_id: string | null
-  is_package: boolean
-}
+type ProductRow = SharedProductRow & { is_package: boolean }
 
 interface UnitDefRow {
   unit: string
@@ -145,9 +138,7 @@ export function InventoryList({ crewId }: InventoryListProps) {
       const [productsRes, categoriesRes, spacesRes] = await Promise.all([
         supabase
           .from('products')
-          .select(
-            'product_id, crew_id, name, brand, barcode, image_url, size_value, size_unit, default_category_id, is_package',
-          )
+          .select(`${PRODUCT_COLUMNS}, is_package`)
           .in('product_id', productIds)
           .is('deleted_at', null),
         categoryIds.length > 0
@@ -177,6 +168,7 @@ export function InventoryList({ crewId }: InventoryListProps) {
           crew_id: null,
           name: 'Unknown product',
           brand: null,
+          variant: null,
           barcode: null,
           image_url: null,
           size_value: null,
@@ -253,6 +245,7 @@ export function InventoryList({ crewId }: InventoryListProps) {
           search: [
             product.name,
             product.brand ?? '',
+            product.variant ?? '',
             categoryName ?? '',
             item.notes ?? '',
           ]
@@ -473,6 +466,11 @@ function InventoryRow({ row, expanded, onToggle }: InventoryRowProps) {
           {product.brand && (
             <span className="ml-1 font-body text-sm font-normal text-ink-600">
               · {product.brand}
+            </span>
+          )}
+          {product.variant && (
+            <span className="ml-1 font-body text-sm font-normal text-ink-600">
+              · {product.variant}
             </span>
           )}
         </h3>

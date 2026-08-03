@@ -4,7 +4,7 @@ import { CtaTray, PrimaryButton, TextButton } from '@/components/ds'
 import { SpaceSelect } from '@/components/spaces/space-select'
 import { useSupabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
-import type { ProductRow } from './types'
+import { PRODUCT_COLUMNS, type ProductRow } from './types'
 
 interface QuickAddFormProps {
   crewId: string
@@ -23,9 +23,6 @@ interface SpaceLite {
   parent_id: string | null
   unit_type: string
 }
-
-const PRODUCT_COLUMNS =
-  'product_id, crew_id, name, brand, barcode, image_url, size_value, size_unit, default_category_id'
 
 function escapeIlike(query: string): string {
   return query.replace(/[%_,]/g, '\\$&')

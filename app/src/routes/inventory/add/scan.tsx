@@ -10,14 +10,12 @@ import {
 import { BarcodeScanner } from '@/components/inventory/barcode-scanner'
 import { useActiveCrew } from '@/lib/active-crew'
 import { useSupabase } from '@/lib/supabase'
-import type {
-  ExistingItemRow,
-  InventoryItemSearchRow,
-  ProductRow,
+import {
+  PRODUCT_COLUMNS,
+  type ExistingItemRow,
+  type InventoryItemSearchRow,
+  type ProductRow,
 } from '@/components/inventory/types'
-
-const PRODUCT_COLUMNS =
-  'product_id, crew_id, name, brand, barcode, image_url, size_value, size_unit, default_category_id'
 
 type Phase =
   | { kind: 'scanning' }

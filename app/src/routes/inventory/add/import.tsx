@@ -22,12 +22,12 @@ import type {
   ParsedFile,
   ResolvedRow,
 } from '@/components/inventory/import/types'
-import type { ProductRow } from '@/components/inventory/types'
+import {
+  PRODUCT_COLUMNS,
+  type ProductRow,
+} from '@/components/inventory/types'
 import { useActiveCrew } from '@/lib/active-crew'
 import { useSupabase } from '@/lib/supabase'
-
-const PRODUCT_COLUMNS =
-  'product_id, crew_id, name, brand, barcode, image_url, size_value, size_unit, default_category_id'
 
 type Step = 'upload' | 'map' | 'preview' | 'result'
 
