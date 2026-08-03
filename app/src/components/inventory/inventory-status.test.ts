@@ -19,8 +19,16 @@ describe('deriveAlerts', () => {
     expect(deriveAlerts(base)).toEqual([])
   })
 
-  it('flags out_of_stock when quantity is 0', () => {
-    expect(deriveAlerts({ ...base, quantity: 0 })).toContain('out_of_stock')
+  it('flags out_of_stock when quantity is 0 and min_stock is set', () => {
+    expect(
+      deriveAlerts({ ...base, quantity: 0, min_stock: 3 }),
+    ).toContain('out_of_stock')
+  })
+
+  it('does not flag out_of_stock when min_stock is null (one-off item)', () => {
+    const alerts = deriveAlerts({ ...base, quantity: 0 })
+    expect(alerts).not.toContain('out_of_stock')
+    expect(alerts).not.toContain('low_stock')
   })
 
   it('flags low_stock when quantity < min_stock', () => {

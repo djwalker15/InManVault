@@ -852,7 +852,7 @@ function EditForm({
         step="0.01"
         value={minStock}
         onValueChange={setMinStock}
-        hint={`In ${unit}.`}
+        hint={`In ${unit}. Leave empty for one-off items — no stock alerts.`}
       />
       <label className="flex flex-col gap-2">
         <span className="font-display text-sm font-bold uppercase tracking-[0.35px] text-ink-900">

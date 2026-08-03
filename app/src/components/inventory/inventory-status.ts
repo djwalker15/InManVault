@@ -45,7 +45,9 @@ export function deriveAlerts(input: InventoryStatusInput): InventoryAlert[] {
   const today = input.today ?? todayString()
   const window = input.expiringWindowDays ?? 7
   const out: InventoryAlert[] = []
-  if (input.quantity === 0) {
+  // min_stock unset means the crew doesn't intend to restock (one-off item):
+  // no stock alerts at all, only expiry/displaced.
+  if (input.min_stock !== null && input.quantity === 0) {
     out.push('out_of_stock')
   } else if (input.min_stock !== null && input.quantity < input.min_stock) {
     out.push('low_stock')

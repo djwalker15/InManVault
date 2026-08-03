@@ -38,7 +38,7 @@ Every [[Crew]] has an auto-created system list called **"Suggested Items"** (or 
 
 ## Trigger 1 — Low Stock
 
-**When:** An [[InventoryItem]]'s cached `quantity` drops below its `min_stock` threshold (or reaches 0).
+**When:** An [[InventoryItem]]'s cached `quantity` drops below its `min_stock` threshold (or reaches 0). Items with `min_stock` unset are one-offs and never trigger — the same rule as the stock alerts.
 
 **Behavior (configurable per Crew):**
 - **Auto-add** (default): Item is automatically added to the Suggested Items list. No user action needed.

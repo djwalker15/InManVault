@@ -37,7 +37,7 @@ const items = [
     quantity: 0,
     unit: 'count',
     category_id: null,
-    min_stock: null,
+    min_stock: 2,
     expiry_date: null,
   },
   {
