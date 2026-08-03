@@ -55,7 +55,7 @@ Tapping an item row expands it in place, revealing the full detail card without 
 - **Home location:** `home_space_id` as full path (or "Unsorted" if null)
 - **Displacement status:** In place ✅ / Displaced ⚠️ / Unsorted 📋
 - **Last unit cost:** `last_unit_cost` (or "Not tracked" if null)
-- **Min stock threshold:** `min_stock` (or "Not set")
+- **Min stock threshold:** `min_stock` (or "Not set — no stock alerts"; a null `min_stock` marks a one-off item that never fires low/out-of-stock alerts)
 - **Expiry date:** `expiry_date` with relative label ("Expires in 3 days", "Expired 2 days ago")
 - **Notes**
 
@@ -149,7 +149,7 @@ A dedicated view showing all items needing attention, grouped by alert type. Ava
 
 | Group | Condition | Inline Actions |
 |-------|-----------|---------------|
-| 🔴 **Out of Stock** | `quantity` = 0 | Add to shopping list, Restock, Log waste |
+| 🔴 **Out of Stock** | `quantity` = 0 and `min_stock` is set | Add to shopping list, Restock, Log waste |
 | 🟡 **Low Stock** | `quantity` < `min_stock` and > 0 | Add to shopping list, Restock |
 | 🟠 **Expiring Soon** | `expiry_date` within configurable threshold (default 7 days) | Use it (consumption [[Flow]]), Log waste, Extend date |
 | 🔴 **Expired** | `expiry_date` has passed | Log waste, Extend date (if still usable) |

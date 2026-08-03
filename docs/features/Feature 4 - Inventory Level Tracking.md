@@ -11,7 +11,7 @@ Three alert types: low stock, out of stock, expiry. Updates progress from manual
 ## Alert Types
 
 - **Low stock** — `quantity` < `min_stock` on [[InventoryItem]]
-- **Out of stock** — `quantity` = 0
+- **Out of stock** — `quantity` = 0 and `min_stock` set (null `min_stock` = one-off item, no stock alerts)
 - **Expiry approaching** — `expiry_date` within configurable threshold
 - **Expired** — `expiry_date` has passed
 

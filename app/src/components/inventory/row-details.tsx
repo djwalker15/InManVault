@@ -201,7 +201,7 @@ export function InventoryRowDetails(props: InventoryRowDetailsProps) {
             label="Min stock"
             value={
               props.minStock == null
-                ? 'Not set'
+                ? 'Not set — no stock alerts'
                 : `${props.minStock} ${props.unit}`
             }
           />

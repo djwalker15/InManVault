@@ -16,7 +16,7 @@ A [[Crew]]'s specific instance of a [[Product]] at a location. This is the "how 
 | `category_id` | FK → [[Category]] | Nullable — overrides [[Product]]'s default category if set |
 | `quantity` | numeric | **Cached value** — derived from [[Flow]] ledger. See note below. |
 | `unit` | text | |
-| `min_stock` | numeric | Nullable — threshold for low stock alerts |
+| `min_stock` | numeric | Nullable — threshold for stock alerts. NULL = one-off item: no low-stock *or* out-of-stock alerts |
 | `expiry_date` | date | Nullable |
 | `last_unit_cost` | numeric | Updated on purchase [[Flow]]s |
 | `notes` | text | |
@@ -51,7 +51,9 @@ Derived from the two space fields:
 ## Alert Types
 
 - **Low stock** — `quantity` < `min_stock`
-- **Out of stock** — `quantity` = 0
+- **Out of stock** — `quantity` = 0 and `min_stock` set
+
+Both stock alerts require `min_stock` to be set — a null `min_stock` marks a one-off item (bought once, consumed) that should never nag about restocking.
 - **Expiry approaching** — `expiry_date` within configurable threshold
 - **Expired** — `expiry_date` has passed
 

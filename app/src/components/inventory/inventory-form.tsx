@@ -268,7 +268,7 @@ export function InventoryForm({
         step="0.01"
         value={minStock}
         onValueChange={setMinStock}
-        hint="Alert me when I have fewer than this."
+        hint="Alert me when I have fewer than this. Leave empty for one-off items — no stock alerts."
       />
 
       <label className="flex flex-col gap-2">
