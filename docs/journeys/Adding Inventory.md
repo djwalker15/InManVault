@@ -72,7 +72,7 @@ Opens a creation form:
 | Field | Required? | Notes |
 |-------|-----------|-------|
 | Name | Yes | |
-| Brand | No | |
+| Brand | No | Autocompletes from brands already visible to the crew (master catalog + crew-created [[Product]]s). A typed brand that matches an existing one case-insensitively snaps to the existing spelling; genuinely new brands are accepted as free text. |
 | Barcode | No | UPC/EAN |
 | Image | No | Upload |
 | Size value | No | Numeric |
