@@ -27,6 +27,7 @@ System-seeded reference table that provides conversion factors within unit categ
 | tbsp | volume | fl_oz | 0.5 |
 | cup | volume | fl_oz | 8 |
 | fl_oz | volume | fl_oz | 1 |
+| gal | volume | fl_oz | 128 |
 | count | count | count | 1 |
 | pkg | count | count | 1 |
 

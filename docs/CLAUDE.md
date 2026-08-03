@@ -104,6 +104,7 @@ A `unit_definitions` reference table provides conversion factors within unit cat
 | tbsp | volume | fl_oz | 0.5 |
 | cup | volume | fl_oz | 8 |
 | fl_oz | volume | fl_oz | 1 |
+| gal | volume | fl_oz | 128 |
 | count | count | count | 1 |
 | pkg | count | count | 1 |
 
@@ -483,7 +484,7 @@ Adding Inventory shipped (5 add methods, including receipt scan). The outbound l
 
 | Data | Rows | Method |
 |------|------|--------|
-| `unit_definitions` | 12 | SQL migration — hardcoded |
+| `unit_definitions` | 13 | SQL migration — hardcoded |
 | `categories` (global) | 20 | SQL migration — hardcoded |
 | `product_groups` (global) | 50-100 | Pre-launch pipeline — Open Food Facts taxonomy |
 | `products` (master catalog) | 500-1000 | Pre-launch pipeline — Open Food Facts filtered import, linked to groups |

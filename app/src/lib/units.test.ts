@@ -12,6 +12,8 @@ const units = buildUnitMap([
   { unit: 'oz', unit_category: 'weight', to_base_factor: 28.3495 },
   { unit: 'fl_oz', unit_category: 'volume', to_base_factor: 1 },
   { unit: 'cup', unit_category: 'volume', to_base_factor: 8 },
+  { unit: 'L', unit_category: 'volume', to_base_factor: 33.814 },
+  { unit: 'gal', unit_category: 'volume', to_base_factor: 128 },
   { unit: 'count', unit_category: 'count', to_base_factor: 1 },
 ])
 
@@ -23,6 +25,13 @@ describe('convertQuantity', () => {
 
   it('converts grams to ounces', () => {
     expect(convertQuantity(50, 'g', 'oz', units)).toBeCloseTo(1.7637, 3)
+  })
+
+  it('converts gallons within the volume category', () => {
+    expect(convertQuantity(1, 'gal', 'fl_oz', units)).toBe(128)
+    expect(convertQuantity(1, 'gal', 'cup', units)).toBe(16)
+    expect(convertQuantity(1, 'gal', 'L', units)).toBeCloseTo(3.7854, 3)
+    expect(convertQuantity(2, 'L', 'gal', units)).toBeCloseTo(0.5283, 3)
   })
 
   it('blocks cross-category conversion (returns null)', () => {
