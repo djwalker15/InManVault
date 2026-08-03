@@ -1,9 +1,10 @@
 erDiagram
     %% ═══════════════════════════════════════════
     %% INMAN — Entity Relationship Diagram
-    %% Updated: June 15, 2026 (Feature 12 — Inventory Item Composition)
-    %% Changes: Added ProductComponent, PackageBreakEvent, FlowPackageBreakDetail;
-    %%          is_package on Product; package_break/package_yield flow types
+    %% Updated: August 3, 2026 (Product variant axis)
+    %% Changes: variant on Product — nullable free-text descriptor (flavor/scent/style)
+    %% Prior: June 15, 2026 — Feature 12: ProductComponent, PackageBreakEvent,
+    %%        FlowPackageBreakDetail; is_package on Product; package_break/yield flow types
     %% Prior: March 31, 2026 — Invite entity, token_hash on KioskSession
     %% ═══════════════════════════════════════════
 
@@ -101,6 +102,7 @@ erDiagram
         int product_id PK
         string name
         string brand
+        string variant "nullable, 1-80 chars; flavor/scent/style"
         string barcode "UPC/EAN"
         string image_url
         int default_category_id FK

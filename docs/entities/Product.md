@@ -13,6 +13,7 @@ Optionally belongs to a [[ProductGroup]] (the generic concept — e.g., "Sugar")
 | `product_id` | PK | |
 | `name` | text | |
 | `brand` | text | |
+| `variant` | text | Nullable, 1–80 chars. Free-text variant descriptor — flavor / scent / style ("Lime", "Zero Sugar Cherry"). Size is NOT a variant (it has its own columns below). Autocompletes from previously used values; no managed list. |
 | `barcode` | text | UPC/EAN |
 | `image_url` | text | |
 | `default_category_id` | FK → [[Category]] | |
@@ -58,6 +59,7 @@ Buying a package adds a **sealed** [[InventoryItem]] counted in packs; **opening
 ## Key Decisions
 
 - **Shared master catalog** with crew-private custom products ([[Nullable crew_id Pattern]])
+- **`variant` is a free-text descriptor, not a structured axis.** One field covers flavor/scent/style ("Lime", "Zero Sugar Cherry"); size stays in `size_value`/`size_unit`. Each variant is still its own Product row with its own barcode — the field disambiguates rows, it does not configure them. Autocomplete nudges spelling consistency; there is **no DB uniqueness** on (name, variant). Distinct from [[Feature 12 - Inventory Item Composition]]'s variety packs, which are about *components inside a package*, not product naming. Approved 2026-06-15 (ClickUp 86e1wcv95).
 - **`is_package` is a stored flag, not a live join.** App-maintained whenever components are added/removed — true iff active [[ProductComponent]] rows exist. Trades a tiny write-time cost for cheap catalog-search filtering.
 - **ProductGroup link is optional.** A Product can exist without belonging to a group. Ungrouped products are fully functional.
 - **Barcode scanning** resolves to Product regardless of Crew
