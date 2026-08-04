@@ -85,6 +85,26 @@ describe('ProductSearch — variant', () => {
     ).toBeInTheDocument()
   })
 
+  it('renders a zero pack size instead of dropping it', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    makeSupabaseMock({
+      products: {
+        select: {
+          data: [{ ...lime, size_value: 0, size_unit: 'oz' }],
+          error: null,
+        },
+      },
+      inventory_items: { select: { data: [], error: null } },
+      spaces: { select: { data: [], error: null } },
+    })
+    renderSearch()
+    await search('lime')
+
+    expect(
+      screen.getByText('LaCroix · Lime · 0 oz · Catalog'),
+    ).toBeInTheDocument()
+  })
+
   it('shows the variant and size in existing-inventory rows', async () => {
     mockSearch({ withItem: true })
     renderSearch()

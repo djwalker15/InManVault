@@ -54,6 +54,7 @@ Selecting one moves to Step 2.
 
 [[InventoryItem]]s the [[Crew]] already has for matching [[Product]]s. Each result shows:
 - Name, brand
+- Variant and pack size (when set) — disambiguates same-name products
 - Current quantity
 - Location path (e.g., "Kitchen > Back > Above > Cabinet 1")
 

@@ -7,6 +7,7 @@ export function formatSize(
   sizeValue: number | null,
   sizeUnit: string | null,
 ): string | null {
-  if (sizeValue === null || sizeUnit === null) return null
+  // == null also catches undefined from partial rows in tests/legacy data.
+  if (sizeValue == null || sizeUnit == null) return null
   return `${sizeValue} ${sizeUnit}`
 }

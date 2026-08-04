@@ -41,6 +41,8 @@ describe('RestockForm', () => {
     ).toBeInTheDocument()
     expect(screen.getByText(/3 count/i)).toBeInTheDocument()
     expect(screen.getByText(/my house . kitchen/i)).toBeInTheDocument()
+    // Brand and pack size disambiguate same-name products in the header.
+    expect(screen.getByText(/heinz · 6 oz/i)).toBeInTheDocument()
   })
 
   it('shows a live new-total preview as quantity changes', () => {
