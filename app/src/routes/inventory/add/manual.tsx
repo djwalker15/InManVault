@@ -108,6 +108,13 @@ export default function ManualAddInventoryPage() {
             crewId={activeCrewId}
             onSelect={handleSelect}
             onCreateCustom={() => setPhase({ kind: 'custom' })}
+            onCreateSimilar={(product) =>
+              setPhase({
+                kind: 'custom',
+                initialProduct: product,
+                autoFocusVariant: true,
+              })
+            }
           />
         ) : (
           <AddItemForms

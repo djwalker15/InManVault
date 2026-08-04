@@ -16,6 +16,12 @@ interface ProductSearchProps {
   crewId: string
   onSelect: (selection: Selection) => void
   onCreateCustom: () => void
+  /**
+   * "Create similar": start a custom-product draft prefilled from an
+   * existing product. Optional — consumers without the affordance (the
+   * receipt sheet) simply don't render the action.
+   */
+  onCreateSimilar?: (product: ProductRow) => void
   /** Seed the search box (e.g. a receipt line's canonical name). */
   initialQuery?: string
 }
@@ -49,6 +55,7 @@ export function ProductSearch({
   crewId,
   onSelect,
   onCreateCustom,
+  onCreateSimilar,
   initialQuery = '',
 }: ProductSearchProps) {
   const supabase = useSupabase()
@@ -227,6 +234,11 @@ export function ProductSearch({
                     from: row,
                   })
                 }
+                onCreateSimilar={
+                  onCreateSimilar
+                    ? () => onCreateSimilar(row.product)
+                    : undefined
+                }
               />
             ))}
           </ul>
@@ -244,6 +256,11 @@ export function ProductSearch({
                 key={product.product_id}
                 product={product}
                 onClick={() => onSelect({ kind: 'product', product })}
+                onCreateSimilar={
+                  onCreateSimilar
+                    ? () => onCreateSimilar(product)
+                    : undefined
+                }
               />
             ))}
           </ul>
@@ -290,16 +307,18 @@ function ResultGroup({
 function ProductResultRow({
   product,
   onClick,
+  onCreateSimilar,
 }: {
   product: ProductRow
   onClick: () => void
+  onCreateSimilar?: () => void
 }) {
   return (
-    <li>
+    <li className="flex flex-col gap-2 rounded-xl bg-paper-100 p-3">
       <button
         type="button"
         onClick={onClick}
-        className="flex w-full items-center gap-3 rounded-xl bg-paper-100 p-3 text-left transition active:scale-[0.99] hover:bg-paper-200"
+        className="flex w-full items-center gap-3 rounded-lg text-left transition active:scale-[0.99] hover:bg-paper-200"
       >
         <span
           aria-hidden
@@ -329,6 +348,17 @@ function ProductResultRow({
           </span>
         </span>
       </button>
+      {onCreateSimilar && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onCreateSimilar}
+            className="inline-flex h-9 items-center justify-center rounded-full bg-paper-250 px-3 font-display text-xs font-bold text-sage-700"
+          >
+            Create similar
+          </button>
+        </div>
+      )}
     </li>
   )
 }
@@ -337,10 +367,12 @@ function ExistingResultRow({
   row,
   onRestock,
   onAddAnother,
+  onCreateSimilar,
 }: {
   row: ExistingItemRow
   onRestock: () => void
   onAddAnother: () => void
+  onCreateSimilar?: () => void
 }) {
   return (
     <li className="flex flex-col gap-2 rounded-xl bg-paper-100 p-3">
@@ -392,6 +424,15 @@ function ExistingResultRow({
         >
           Add another
         </button>
+        {onCreateSimilar && (
+          <button
+            type="button"
+            onClick={onCreateSimilar}
+            className="inline-flex h-9 items-center justify-center rounded-full bg-paper-250 px-3 font-display text-xs font-bold text-sage-700"
+          >
+            Create similar
+          </button>
+        )}
       </div>
     </li>
   )
