@@ -85,11 +85,13 @@ describe('ProductSearch — variant', () => {
     ).toBeInTheDocument()
   })
 
-  it('shows the variant in existing-inventory rows', async () => {
+  it('shows the variant and size in existing-inventory rows', async () => {
     mockSearch({ withItem: true })
     renderSearch()
     await search('lime')
 
-    expect(screen.getByText('Lime · 4 count · Pantry')).toBeInTheDocument()
+    expect(
+      screen.getByText('Lime · 12 fl_oz · 4 count · Pantry'),
+    ).toBeInTheDocument()
   })
 })

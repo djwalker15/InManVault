@@ -6,6 +6,7 @@ import {
   EMPTY_FILTERS,
   type InventoryFiltersState,
 } from './inventory-filters-state'
+import { formatSize } from './format'
 import { InventoryRowDetails } from './row-details'
 import {
   PRODUCT_COLUMNS,
@@ -246,6 +247,7 @@ export function InventoryList({ crewId }: InventoryListProps) {
             product.name,
             product.brand ?? '',
             product.variant ?? '',
+            formatSize(product.size_value, product.size_unit) ?? '',
             categoryName ?? '',
             item.notes ?? '',
           ]
@@ -479,6 +481,14 @@ function InventoryRow({ row, expanded, onToggle }: InventoryRowProps) {
             {item.quantity}
           </span>{' '}
           {item.unit}
+          {formatSize(product.size_value, product.size_unit) && (
+            <>
+              <span className="mx-1.5 text-ink-400">·</span>
+              <span className="text-ink-600">
+                {formatSize(product.size_value, product.size_unit)}
+              </span>
+            </>
+          )}
           {locationPath && (
             <>
               <span className="mx-1.5 text-ink-400">·</span>

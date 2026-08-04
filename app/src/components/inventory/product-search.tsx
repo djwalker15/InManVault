@@ -3,6 +3,7 @@ import { Plus, Search } from 'lucide-react'
 import { TextButton } from '@/components/ds'
 import { useSupabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import { formatSize } from './format'
 import {
   PRODUCT_COLUMNS,
   type ExistingItemRow,
@@ -320,9 +321,7 @@ function ProductResultRow({
             {[
               product.brand,
               product.variant,
-              product.size_value && product.size_unit
-                ? `${product.size_value} ${product.size_unit}`
-                : null,
+              formatSize(product.size_value, product.size_unit),
               product.crew_id === null ? 'Catalog' : 'Crew',
             ]
               .filter(Boolean)
@@ -369,6 +368,7 @@ function ExistingResultRow({
           <span className="font-body text-xs text-ink-600">
             {[
               row.product.variant,
+              formatSize(row.product.size_value, row.product.size_unit),
               `${row.item.quantity} ${row.item.unit}`,
               row.locationPath || 'No location',
             ]
