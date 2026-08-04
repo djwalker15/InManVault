@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { mockClerk } from '@/test/clerk-mock'
 import { makeSupabaseMock } from '@/test/supabase-mock'
@@ -44,12 +44,13 @@ function mockSearch({ withItem = false } = {}) {
   })
 }
 
-function renderSearch() {
+function renderSearch(props: Partial<Parameters<typeof ProductSearch>[0]> = {}) {
   return render(
     <ProductSearch
       crewId="crew_abc"
       onSelect={() => {}}
       onCreateCustom={() => {}}
+      {...props}
     />,
   )
 }
@@ -113,5 +114,33 @@ describe('ProductSearch — variant', () => {
     expect(
       screen.getByText('Lime · 12 fl_oz · 4 count · Pantry'),
     ).toBeInTheDocument()
+  })
+})
+
+describe('ProductSearch — create similar', () => {
+  it('shows a Create-similar pill on both row types when the callback is provided', async () => {
+    mockSearch({ withItem: true })
+    const onCreateSimilar = vi.fn()
+    renderSearch({ onCreateSimilar })
+    await search('lime')
+
+    // One pill under the catalog row, one under the existing-inventory row.
+    const pills = screen.getAllByRole('button', { name: /create similar/i })
+    expect(pills).toHaveLength(2)
+
+    fireEvent.click(pills[0])
+    expect(onCreateSimilar).toHaveBeenCalledWith(
+      expect.objectContaining({ product_id: 'prod_lime', variant: 'Lime' }),
+    )
+  })
+
+  it('hides the action entirely when no callback is passed (receipt sheet)', async () => {
+    mockSearch({ withItem: true })
+    renderSearch()
+    await search('lime')
+
+    expect(
+      screen.queryByRole('button', { name: /create similar/i }),
+    ).not.toBeInTheDocument()
   })
 })

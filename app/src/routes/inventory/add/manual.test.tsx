@@ -255,6 +255,55 @@ describe('AddInventoryPage — Step 1 product resolution', () => {
     })
   })
 
+  it('Create similar prefills the custom form with the variant field focused', async () => {
+    makeSupabaseMock({
+      crew_members: {
+        select: {
+          data: [
+            {
+              crew_id: 'crew_abc',
+              role: 'admin',
+              crews: { name: 'Test', owner_id: 'user_1' },
+            },
+          ],
+          error: null,
+        },
+      },
+      products: { select: { data: [masterProduct], error: null } },
+      inventory_items: { select: { data: [], error: null } },
+      categories: { select: { data: [], error: null } },
+      unit_definitions: { select: { data: [], error: null } },
+      spaces: { select: { data: [], error: null } },
+    })
+    renderWithRouter(<AddInventoryPage />)
+    fireEvent.change(
+      await screen.findByPlaceholderText(/tomato paste/i),
+      { target: { value: 'tom' } },
+    )
+    await waitFor(
+      () => {
+        expect(
+          screen.getByRole('button', { name: /create similar/i }),
+        ).toBeInTheDocument()
+      },
+      { timeout: 2000 },
+    )
+    fireEvent.click(screen.getByRole('button', { name: /create similar/i }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: /create a custom product/i }),
+      ).toBeInTheDocument()
+    })
+    expect(screen.getByLabelText(/product name/i)).toHaveValue('Tomato Paste')
+    expect(screen.getByLabelText(/brand/i)).toHaveValue('Heinz')
+    expect(screen.getByLabelText(/size value/i)).toHaveValue(6)
+    // The clone must not inherit the source UPC.
+    expect(screen.getByLabelText(/barcode/i)).toHaveValue('')
+    // The variant is the field that usually differs, so it takes focus.
+    expect(screen.getByLabelText(/variant/i)).toHaveFocus()
+  })
+
   it('after a successful save, returns to search with a session counter', async () => {
     makeSupabaseMock(
       {
