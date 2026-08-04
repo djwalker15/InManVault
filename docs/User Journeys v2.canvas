@@ -84,14 +84,14 @@
 		{"id":"g000000000000003","type":"group","x":1380,"y":14400,"width":1060,"height":280,"color":"6","label":"Intake: Sequential Mode"},
 		{"id":"d000000000000004","type":"group","x":1380,"y":8800,"width":960,"height":280,"color":"6","label":"Adding Inventory: Method 3 — Barcode Scan"},
 		{"id":"d000000000000010","type":"file","file":"journeys/Adding Inventory.md","x":40,"y":7600,"width":380,"height":180,"color":"4"},
-		{"id":"d000000000000023","type":"text","text":"### Group C — Create Custom\n\n\"Can't find it?\" Name, brand, barcode, image, size, category. Creates crew-private Product.\n\n**Data:** Product (insert — crew_id set)","x":1920,"y":7500,"width":360,"height":160},
+		{"id":"d000000000000023","type":"text","text":"### Group C — Create Custom\n\n\"Can't find it?\" Name, brand, variant, barcode, image, size, category. Creates crew-private Product.\n\n**Data:** Product (insert — crew_id set)","x":1920,"y":7500,"width":360,"height":160},
 		{"id":"d000000000000050","type":"file","file":"entities/Product.md","x":1440,"y":7740,"width":200,"height":60,"color":"1"},
 		{"id":"d000000000000012","type":"text","text":"### Entry: Space Page\n\"Add Item Here\" on a Space node. `current_space_id` pre-filled.","x":520,"y":7400,"width":340,"height":100,"color":"5"},
 		{"id":"d000000000000033","type":"text","text":"### Step 4 — Import\n\nAtomic via edge function. Creates Products, InventoryItems, Flows. Progress indicator. Error report on completion.\n\n**Data:** Product (insert), InventoryItem (insert), Flow (insert)","x":2400,"y":8180,"width":400,"height":180},
 		{"id":"d000000000000040","type":"text","text":"### Step 1 — Barcode Scan\n\nCamera activates. Decode UPC/EAN. Search catalog by barcode. Continuous scan mode after submit.\n\nFound → Step 2 | Not found → Create Custom | In inventory → Restock/Add Another","x":1440,"y":8860,"width":360,"height":180,"color":"3"},
 		{"id":"d000000000000041","type":"text","text":"### Method 4 — Quick Add\n\nMinimal one-screen form: product name (catalog search as you type), quantity, unit, location. Everything else skipped.\n\n**Data:** Product (read/insert), InventoryItem (insert), Flow (insert)","x":980,"y":8860,"width":360,"height":180},
 		{"id":"d000000000000024","type":"text","text":"### Restock Sub-Flow\n\nSimplified: quantity to add (additive), optional cost. No new InventoryItem — updates existing.\n\n**Data:** Flow (insert — purchase), InventoryItem (update qty)","x":2440,"y":7640,"width":360,"height":160},
-		{"id":"d000000000000020","type":"text","text":"### Step 1 — Product Resolution\n\n\"Search for a product...\" Results in 3 groups:\n- **A:** Master catalog matches\n- **B:** Existing inventory (Restock / Add Another)\n- **C:** Create custom product","x":1440,"y":7120,"width":360,"height":200},
+		{"id":"d000000000000020","type":"text","text":"### Step 1 — Product Resolution\n\n\"Search for a product...\" Results in 3 groups:\n- **A:** Master catalog matches (each with Create similar)\n- **B:** Existing inventory (Restock / Add Another / Create similar)\n- **C:** Create custom product\n\nPlus **Browse the catalog** — chip-filtered, paginated browse (All / Catalog / Mine).","x":1440,"y":7120,"width":360,"height":200},
 		{"id":"d000000000000021","type":"text","text":"### Group A — Catalog Match\n\nProduct found in master catalog. Auto-select → proceeds to Step 2.\n\n**Data:** Product (read)","x":1920,"y":7120,"width":360,"height":140},
 		{"id":"d000000000000061","type":"text","text":"**[MOCK: Inventory Details Form]**\n\nProduct confirmation at top. Form fields: quantity, unit, Space tree picker for location, category override, cost, min stock, expiry, notes.","x":3040,"y":7060,"width":400,"height":180,"color":"2"},
 		{"id":"d000000000000022","type":"text","text":"### Group B — Existing Inventory\n\nCrew already has this product. Two actions:\n- **Restock this** → Restock Sub-Flow\n- **Add another** → full Step 2","x":1920,"y":7300,"width":360,"height":160},
@@ -102,7 +102,7 @@
 		{"id":"d000000000000052","type":"file","file":"entities/Flow.md","x":3360,"y":7880,"width":200,"height":60,"color":"1"},
 		{"id":"d000000000000051","type":"file","file":"entities/InventoryItem.md","x":3760,"y":7480,"width":200,"height":60,"color":"1"},
 		{"id":"d000000000000011","type":"text","text":"### Entry: Inventory Page\n\"Add Item\" button from `/inventory`. No context pre-filled.","x":520,"y":7200,"width":340,"height":100,"color":"5"},
-		{"id":"d000000000000060","type":"text","text":"**[MOCK: Product Search]**\n\nSearch field with 3-group results: catalog matches, existing inventory (Restock/Add Another), create custom. Inline product cards.","x":1440,"y":6800,"width":360,"height":180,"color":"2"},
+		{"id":"d000000000000060","type":"text","text":"**[MOCK: Product Search]**\n\nSearch field with 3-group results: catalog matches, existing inventory (Restock/Add Another), create custom — plus a browse-the-catalog entry with source/category chips. Inline product cards.","x":1440,"y":6800,"width":360,"height":180,"color":"2"},
 		{"id":"d000000000000025","type":"text","text":"### Step 2 — Inventory Details\n\n\"How much and where?\" Product shown as confirmation. Fields: quantity, unit, current location, home location, category, cost, min stock, expiry, notes.\n\n**Data:** InventoryItem (insert), Flow (insert — purchase)","x":3040,"y":7320,"width":400,"height":200},
 		{"id":"e000000000000010","type":"file","file":"journeys/Checking Stock.md","x":40,"y":10300,"width":380,"height":180,"color":"4"},
 		{"id":"e000000000000050","type":"file","file":"entities/InventoryItem.md","x":1480,"y":10640,"width":200,"height":60,"color":"1"},
@@ -424,7 +424,8 @@
 		{"id":"x000000000000024","type":"text","text":"### Activity Log\n\nPer-device or cross-device. Shows: time, user, action, detail. Filterable by date, member, action type. Source: Flows + action records attributed to kiosk users.\n\n**Data:** Flow, WasteEvent, BatchEvent (read)","x":1960,"y":49900,"width":380,"height":220},
 		{"id":"x000000000000050","type":"file","file":"entities/KioskSession.md","x":1960,"y":50160,"width":200,"height":60,"color":"1"},
 		{"id":"x000000000000060","type":"text","text":"**[MOCK: Device List]**\n\nTable: device name, Premises, status badge, actions count, last activity. Row actions: Edit, Deactivate, Delete.","x":980,"y":49580,"width":380,"height":180,"color":"2"},
-		{"id":"x000000000000061","type":"text","text":"**[MOCK: Activity Log]**\n\nTimeline: time, user avatar+name, action icon+label, detail summary. Date/member/action filters.","x":1960,"y":49680,"width":380,"height":180,"color":"2"}
+		{"id":"x000000000000061","type":"text","text":"**[MOCK: Activity Log]**\n\nTimeline: time, user avatar+name, action icon+label, detail summary. Date/member/action filters.","x":1960,"y":49680,"width":380,"height":180,"color":"2"},
+		{"id":"d000000000000027","type":"text","text":"### Browse — Catalog\n\nSource chips (All / Catalog / Mine) + category chips, name-ordered, 25/page Load more. Select → Step 2; back keeps filters.\n\n**Data:** Product (read, paginated), Category (read)","x":1440,"y":7380,"width":360,"height":200}
 	],
 	"edges":[
 		{"id":"a000000000000100","fromNode":"a000000000000010","fromSide":"right","toNode":"a000000000000011","toSide":"left"},
@@ -857,6 +858,8 @@
 		{"id":"x000000000000122","fromNode":"x000000000000023","fromSide":"right","toNode":"x000000000000050","toSide":"left"},
 		{"id":"x000000000000130","fromNode":"x000000000000060","fromSide":"bottom","toNode":"x000000000000020","toSide":"top"},
 		{"id":"x000000000000131","fromNode":"x000000000000061","fromSide":"bottom","toNode":"x000000000000024","toSide":"top"},
-		{"id":"x000000000000140","fromNode":"v000000000000023","fromSide":"bottom","toNode":"x000000000000010","toSide":"top","label":"Manage after enrollment"}
+		{"id":"x000000000000140","fromNode":"v000000000000023","fromSide":"bottom","toNode":"x000000000000010","toSide":"top","label":"Manage after enrollment"},
+		{"id":"d000000000000131","fromNode":"d000000000000020","fromSide":"bottom","toNode":"d000000000000027","toSide":"top","label":"Browse"},
+		{"id":"d000000000000132","fromNode":"d000000000000027","fromSide":"right","toNode":"d000000000000025","toSide":"bottom"}
 	]
 }
