@@ -432,6 +432,8 @@ Use this document to verify each edge makes conceptual sense, and to annotate wi
 | 24 | Step 1 — Barcode Scan | Step 2 — Inventory Details | Found/Created |
 | 25 | Step 1 — Barcode Scan | Restock Sub-Flow | In inventory |
 | 26 | Method 4 — Quick Add | Step 2 — Inventory Details |  |
+| 27 | Group A — Catalog Match | Group C — Create Custom | Create similar |
+| 28 | Group B — Existing Inventory | Group C — Create Custom | Create similar |
 
 #### 1. journeys/Adding Inventory.md → Entry: Inventory Page
 
@@ -588,6 +590,18 @@ Use this document to verify each edge makes conceptual sense, and to annotate wi
 **Data Flow:**
 
 **UI Detail:**
+
+#### 27. Group A — Catalog Match → Group C — Create Custom (Create similar)
+
+**Data Flow:** Seeds the custom-product draft from the selected Product (name, brand, variant, size, category — never barcode). Save inserts a new crew-private Product; the source row is unmodified.
+
+**UI Detail:** "Create similar" pill in an action row under the catalog result; variant field focused on entry.
+
+#### 28. Group B — Existing Inventory → Group C — Create Custom (Create similar)
+
+**Data Flow:** Same seed as edge 27, taken from the existing row's Product.
+
+**UI Detail:** Third pill on the existing-inventory action row, after Restock this / Add another.
 
 ### Entity References
 
