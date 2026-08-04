@@ -304,7 +304,7 @@ function ResultGroup({
   )
 }
 
-function ProductResultRow({
+export function ProductResultRow({
   product,
   onClick,
   onCreateSimilar,
