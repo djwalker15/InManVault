@@ -88,6 +88,8 @@ Multi-step operations that must fully succeed or fully roll back are implemented
 - **Open package (`open_package`)** — break a sealed package into children: create PackageBreakEvent, one `package_break` out-Flow on the pack, N `package_yield` in-Flows on resolved children (merge-into-existing or create-new), a FlowPackageBreakDetail per leg, and child `last_unit_cost` from the allocated cost — asserting cost conservation
 - **Kiosk action routing** — edge functions validate kiosk token, verify allowed actions, execute operations via service role key, set `performed_by` from identified crew member
 
+**Crew resolution in SECURITY DEFINER RPCs:** an RPC never guesses the caller's crew (e.g. "most-recent membership") — that diverges from the frontend's active-crew preference for multi-crew users. **Creation RPCs take an explicit `p_crew_id`** and validate it with the membership helpers (`is_crew_member`, `is_crew_admin_or_owner`) — `record_purchase`, `bulk_import_inventory`, `apply_space_template`. **Item-scoped RPCs derive the crew from the target row** and then check membership — `restock_inventory`, `open_package`. (Decided 2026-08-03 after a staging bug: `record_purchase` guessed the newest membership while the UI operated in the pinned active crew, so freshly created crew products failed the "Product not accessible" check.)
+
 ### Unit Conversion: Within-Category
 
 A `unit_definitions` reference table provides conversion factors within unit categories (weight, volume, count). Cross-category conversion is blocked.

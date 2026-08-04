@@ -225,10 +225,13 @@ export default function SpacesPage() {
                   <Wrench size={14} aria-hidden />
                   Reorganize
                 </SecondaryButton>
-                <TemplateBrowser
-                  hasExistingSpaces={hasNonPremisesSpaces}
-                  onApplied={refetchSpaces}
-                />
+                {activeCrewId && (
+                  <TemplateBrowser
+                    crewId={activeCrewId}
+                    hasExistingSpaces={hasNonPremisesSpaces}
+                    onApplied={refetchSpaces}
+                  />
+                )}
               </div>
             </div>
             {view === 'cards' ? (

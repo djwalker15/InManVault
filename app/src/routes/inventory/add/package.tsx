@@ -117,6 +117,7 @@ export default function CreatePackagePage() {
       const { data: itemId, error: purchaseError } = await supabase.rpc(
         'record_purchase',
         {
+          p_crew_id: activeCrewId,
           p_product_id: packageProductId,
           p_quantity: qtyNum,
           p_unit: 'pkg',

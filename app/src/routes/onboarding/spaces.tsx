@@ -178,12 +178,15 @@ export default function OnboardingSpacesPage() {
           <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-10">
             <div className="flex flex-1 flex-col gap-4">
               <div className="flex justify-end">
-                <TemplateBrowser
-                  hasExistingSpaces={nodes.some(
-                    (n) => n.parent_id !== null && !n.deleted_at,
-                  )}
-                  onApplied={refetchSpaces}
-                />
+                {crewId && (
+                  <TemplateBrowser
+                    crewId={crewId}
+                    hasExistingSpaces={nodes.some(
+                      (n) => n.parent_id !== null && !n.deleted_at,
+                    )}
+                    onApplied={refetchSpaces}
+                  />
+                )}
               </div>
               <GuidedBranch
                 premises={premises}
@@ -231,12 +234,15 @@ export default function OnboardingSpacesPage() {
               soft-delete branches. When you're done, finish onboarding.
             </p>
             <div className="flex justify-end">
-              <TemplateBrowser
-                hasExistingSpaces={nodes.some(
-                  (n) => n.parent_id !== null && !n.deleted_at,
-                )}
-                onApplied={refetchSpaces}
-              />
+              {crewId && (
+                <TemplateBrowser
+                  crewId={crewId}
+                  hasExistingSpaces={nodes.some(
+                    (n) => n.parent_id !== null && !n.deleted_at,
+                  )}
+                  onApplied={refetchSpaces}
+                />
+              )}
             </div>
             <div className="rounded-2xl bg-paper-100 p-4">
               <TreeEditor

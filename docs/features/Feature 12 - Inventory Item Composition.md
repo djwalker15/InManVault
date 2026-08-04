@@ -91,7 +91,7 @@ Both legs get a `flow_package_break_details` row, so every flow in the event lin
 
 ### Resolution at break time (the RPC)
 
-`open_package(p_package_item_id, p_quantity_opened, p_target_space_id?, p_cost_overrides?)` — atomic plpgsql RPC, same shape as `record_purchase` / shopping checkout:
+`open_package(p_package_item_id, p_quantity_opened, p_target_space_id?, p_cost_overrides?)` — atomic plpgsql RPC, same shape as `record_purchase` / shopping checkout. The crew is derived from the package item row itself (then membership-checked) — item-scoped RPCs never guess the caller's crew:
 
 1. Insert `package_break_events` header.
 2. Insert the **package-out** `package_break` flow (`quantity = quantity_opened`) + its detail (`role='package'`, full package cost recorded).

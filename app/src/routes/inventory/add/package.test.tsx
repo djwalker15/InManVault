@@ -128,6 +128,7 @@ describe('CreatePackagePage', () => {
     expect(sb.rpc).toHaveBeenCalledWith(
       'record_purchase',
       expect.objectContaining({
+        p_crew_id: 'crew_abc',
         p_product_id: 'pkg_new',
         p_quantity: 1,
         p_unit: 'pkg',

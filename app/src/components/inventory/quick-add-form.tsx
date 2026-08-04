@@ -182,6 +182,7 @@ export function QuickAddForm({ crewId, userId, onSaved }: QuickAddFormProps) {
       }
 
       const { error: rpcError } = await supabase.rpc('record_purchase', {
+        p_crew_id: crewId,
         p_product_id: productId,
         p_quantity: quantityNum,
         p_unit: unit,
