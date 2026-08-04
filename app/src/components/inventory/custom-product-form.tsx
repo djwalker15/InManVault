@@ -13,6 +13,20 @@ interface CustomProductFormProps {
   initialBarcode?: string
   /** Pre-fill the variant descriptor. */
   initialVariant?: string
+  /**
+   * "Create similar": seed the draft from an existing product. Barcode is
+   * deliberately never copied — UPCs are unique per variant, and a copied
+   * one would produce false barcode-scan hits.
+   */
+  initialProduct?: Pick<
+    ProductRow,
+    'name' | 'brand' | 'variant' | 'size_value' | 'size_unit' | 'default_category_id'
+  >
+  /**
+   * Focus the variant field instead of name — for "create similar", where
+   * the variant is usually the one field that differs.
+   */
+  autoFocusVariant?: boolean
   onCreated: (product: ProductRow) => void
   onCancel: () => void
 }
@@ -34,17 +48,27 @@ export function CustomProductForm({
   initialName = '',
   initialBarcode = '',
   initialVariant = '',
+  initialProduct,
+  autoFocusVariant = false,
   onCreated,
   onCancel,
 }: CustomProductFormProps) {
   const supabase = useSupabase()
-  const [name, setName] = useState(initialName)
-  const [brand, setBrand] = useState('')
-  const [variant, setVariant] = useState(initialVariant)
+  const [name, setName] = useState(initialProduct?.name ?? initialName)
+  const [brand, setBrand] = useState(initialProduct?.brand ?? '')
+  const [variant, setVariant] = useState(
+    initialProduct?.variant ?? initialVariant,
+  )
   const [barcode, setBarcode] = useState(initialBarcode)
-  const [sizeValue, setSizeValue] = useState('')
-  const [sizeUnit, setSizeUnit] = useState<string>('')
-  const [categoryId, setCategoryId] = useState<string>('')
+  const [sizeValue, setSizeValue] = useState(
+    initialProduct?.size_value != null ? String(initialProduct.size_value) : '',
+  )
+  const [sizeUnit, setSizeUnit] = useState<string>(
+    initialProduct?.size_unit ?? '',
+  )
+  const [categoryId, setCategoryId] = useState<string>(
+    initialProduct?.default_category_id ?? '',
+  )
   const [categories, setCategories] = useState<CategoryRow[]>([])
   const [units, setUnits] = useState<UnitRow[]>([])
   const [submitting, setSubmitting] = useState(false)
@@ -145,7 +169,7 @@ export function CustomProductForm({
         placeholder="Heinz tomato paste"
         value={name}
         onValueChange={setName}
-        autoFocus
+        autoFocus={!autoFocusVariant}
         required
         minLength={1}
         maxLength={200}
@@ -172,6 +196,7 @@ export function CustomProductForm({
         hint="Flavor, scent, or style. Size has its own fields below."
         value={variant}
         onValueChange={setVariant}
+        autoFocus={autoFocusVariant}
         maxLength={80}
         list={variantListId}
         // Same consistency nudge as brand: settle on the spelling already in
