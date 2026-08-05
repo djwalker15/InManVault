@@ -1,8 +1,8 @@
 import { useEffect, useId, useState, type FormEvent } from 'react'
 import { CtaTray, Field, PrimaryButton, TextButton } from '@/components/ds'
 import { useSupabase } from '@/lib/supabase'
-import type { ProductRow } from './types'
-import { useCrewBrands } from './use-crew-brands'
+import { PRODUCT_COLUMNS, type ProductRow } from './types'
+import { useCrewBrands, useCrewVariants } from './use-crew-brands'
 
 interface CustomProductFormProps {
   crewId: string
@@ -11,6 +11,8 @@ interface CustomProductFormProps {
   initialName?: string
   /** Pre-fill the barcode when invoked from a no-match barcode scan. */
   initialBarcode?: string
+  /** Pre-fill the variant descriptor. */
+  initialVariant?: string
   onCreated: (product: ProductRow) => void
   onCancel: () => void
 }
@@ -31,12 +33,14 @@ export function CustomProductForm({
   userId,
   initialName = '',
   initialBarcode = '',
+  initialVariant = '',
   onCreated,
   onCancel,
 }: CustomProductFormProps) {
   const supabase = useSupabase()
   const [name, setName] = useState(initialName)
   const [brand, setBrand] = useState('')
+  const [variant, setVariant] = useState(initialVariant)
   const [barcode, setBarcode] = useState(initialBarcode)
   const [sizeValue, setSizeValue] = useState('')
   const [sizeUnit, setSizeUnit] = useState<string>('')
@@ -46,7 +50,9 @@ export function CustomProductForm({
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { brands, canonicalize } = useCrewBrands()
+  const { variants, canonicalize: canonicalizeVariant } = useCrewVariants()
   const brandListId = useId()
+  const variantListId = useId()
 
   useEffect(() => {
     let cancelled = false
@@ -102,6 +108,7 @@ export function CustomProductForm({
           crew_id: crewId,
           name: trimmedName,
           brand: brand.trim() || null,
+          variant: variant.trim() || null,
           barcode: barcode.trim() || null,
           size_value: sizeValueNumeric,
           size_unit: sizeUnit || null,
@@ -109,9 +116,7 @@ export function CustomProductForm({
           source: 'crew_created',
           created_by: userId,
         })
-        .select(
-          'product_id, crew_id, name, brand, barcode, image_url, size_value, size_unit, default_category_id',
-        )
+        .select(PRODUCT_COLUMNS)
         .single()
       if (insertError) throw insertError
       if (!data) throw new Error('Product insert returned no row')
@@ -159,6 +164,23 @@ export function CustomProductForm({
       <datalist id={brandListId}>
         {brands.map((b) => (
           <option key={b} value={b} />
+        ))}
+      </datalist>
+      <Field
+        label="VARIANT (OPTIONAL)"
+        placeholder="Cherry Zero Sugar — flavor first"
+        hint="Flavor, scent, or style. Size has its own fields below."
+        value={variant}
+        onValueChange={setVariant}
+        maxLength={80}
+        list={variantListId}
+        // Same consistency nudge as brand: settle on the spelling already in
+        // the catalog so "lime" and "Lime" don't fragment search.
+        onBlur={() => setVariant((v) => canonicalizeVariant(v))}
+      />
+      <datalist id={variantListId}>
+        {variants.map((v) => (
+          <option key={v} value={v} />
         ))}
       </datalist>
       <Field

@@ -3,11 +3,12 @@ import { Plus, Search } from 'lucide-react'
 import { TextButton } from '@/components/ds'
 import { useSupabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
-import type {
-  ExistingItemRow,
-  InventoryItemSearchRow,
-  ProductRow,
-  Selection,
+import {
+  PRODUCT_COLUMNS,
+  type ExistingItemRow,
+  type InventoryItemSearchRow,
+  type ProductRow,
+  type Selection,
 } from './types'
 
 interface ProductSearchProps {
@@ -79,12 +80,10 @@ export function ProductSearch({
         const escaped = `%${escapeIlike(debounced)}%`
         const { data: productData, error: productError } = await supabase
           .from('products')
-          .select(
-            'product_id, crew_id, name, brand, barcode, image_url, size_value, size_unit, default_category_id',
-          )
+          .select(PRODUCT_COLUMNS)
           .is('deleted_at', null)
           .or(
-            `name.ilike.${escaped},brand.ilike.${escaped},barcode.eq.${debounced}`,
+            `name.ilike.${escaped},brand.ilike.${escaped},variant.ilike.${escaped},barcode.eq.${debounced}`,
           )
           .limit(20)
         if (cancelled) return
@@ -320,6 +319,7 @@ function ProductResultRow({
           <span className="font-body text-xs text-ink-600">
             {[
               product.brand,
+              product.variant,
               product.size_value && product.size_unit
                 ? `${product.size_value} ${product.size_unit}`
                 : null,
@@ -367,7 +367,13 @@ function ExistingResultRow({
             {row.product.name}
           </span>
           <span className="font-body text-xs text-ink-600">
-            {row.item.quantity} {row.item.unit} · {row.locationPath || 'No location'}
+            {[
+              row.product.variant,
+              `${row.item.quantity} ${row.item.unit}`,
+              row.locationPath || 'No location',
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </span>
         </div>
       </div>

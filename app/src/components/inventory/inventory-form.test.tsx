@@ -10,6 +10,7 @@ const product = {
   crew_id: null,
   name: 'Tomato Paste',
   brand: 'Heinz',
+  variant: null,
   barcode: null,
   image_url: null,
   size_value: 6,

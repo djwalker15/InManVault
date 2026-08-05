@@ -43,8 +43,8 @@ As the user types, results appear in **three groups**:
 
 #### Group A — Master Catalog Matches
 
-[[Product]]s from the shared catalog matching the search query. Each result shows:
-- Name, brand, size
+[[Product]]s from the shared catalog matching the search query (name, brand, variant, or barcode). Each result shows:
+- Name, brand, variant, size
 - Image thumbnail (if available)
 - Default [[Category]]
 
@@ -73,6 +73,7 @@ Opens a creation form:
 |-------|-----------|-------|
 | Name | Yes | |
 | Brand | No | Autocompletes from brands already visible to the crew (master catalog + crew-created [[Product]]s). A typed brand that matches an existing one case-insensitively snaps to the existing spelling; genuinely new brands are accepted as free text. |
+| Variant | No | 1–80 chars. Flavor/scent/style descriptor ("Lime", "Zero Sugar Cherry") — size does NOT belong here. Autocompletes like Brand, same case-insensitive snapping. See [[Product]] Key Decisions. |
 | Barcode | No | UPC/EAN |
 | Image | No | Upload |
 | Size value | No | Numeric |
