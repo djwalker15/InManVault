@@ -7,11 +7,18 @@ import {
   AddItemForms,
   type AddPhase,
 } from '@/components/inventory/add-item-forms'
+import { CatalogBrowser } from '@/components/inventory/catalog-browser'
 import { ProductSearch } from '@/components/inventory/product-search'
-import type { ProductRow, Selection } from '@/components/inventory/types'
+import {
+  INITIAL_BROWSE_FILTERS,
+  type CatalogBrowserFilters,
+  type ProductRow,
+  type Selection,
+} from '@/components/inventory/types'
 import { useActiveCrew } from '@/lib/active-crew'
 
-type Phase = { kind: 'search' } | AddPhase
+type Phase = { kind: 'search' } | { kind: 'browse' } | AddPhase
+type Resolver = 'search' | 'browse'
 
 export default function ManualAddInventoryPage() {
   const { user } = useUser()
@@ -23,6 +30,13 @@ export default function ManualAddInventoryPage() {
   const [phase, setPhase] = useState<Phase>({ kind: 'search' })
   const [sessionCount, setSessionCount] = useState(0)
   const [lastAddedName, setLastAddedName] = useState<string | null>(null)
+  // Which resolver produced the current selection, so cancelling a form
+  // returns there. Kept outside the phase union — like browseFilters — so
+  // it survives the round-trip into the details forms.
+  const [resolver, setResolver] = useState<Resolver>('search')
+  const [browseFilters, setBrowseFilters] = useState<CatalogBrowserFilters>(
+    INITIAL_BROWSE_FILTERS,
+  )
 
   function handleSelect(selection: Selection) {
     if (selection.kind === 'restock') {
@@ -50,7 +64,9 @@ export default function ManualAddInventoryPage() {
       setLastAddedName(phase.selection.item.product.name)
     }
     setSessionCount((n) => n + 1)
-    setPhase({ kind: 'search' })
+    // Return to whichever resolver the item came from — a browse session
+    // continues with its filters intact.
+    setPhase({ kind: resolver })
   }
 
   return (
@@ -70,7 +86,8 @@ export default function ManualAddInventoryPage() {
           </h1>
         </header>
 
-        {sessionCount > 0 && phase.kind === 'search' && (
+        {sessionCount > 0 &&
+          (phase.kind === 'search' || phase.kind === 'browse') && (
           <div
             role="status"
             aria-live="polite"
@@ -104,17 +121,42 @@ export default function ManualAddInventoryPage() {
             We couldn't load your crew. Finish onboarding first.
           </p>
         ) : phase.kind === 'search' ? (
-          <ProductSearch
+          <>
+            <ProductSearch
+              crewId={activeCrewId}
+              onSelect={(selection) => {
+                setResolver('search')
+                handleSelect(selection)
+              }}
+              onCreateCustom={() => setPhase({ kind: 'custom' })}
+              onCreateSimilar={(product) =>
+                setPhase({
+                  kind: 'custom',
+                  initialProduct: product,
+                  autoFocusVariant: true,
+                })
+              }
+            />
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => setPhase({ kind: 'browse' })}
+                className="font-body text-sm text-sage-700 underline-offset-2 hover:underline"
+              >
+                Not sure of the name? Browse the catalog
+              </button>
+            </div>
+          </>
+        ) : phase.kind === 'browse' ? (
+          <CatalogBrowser
             crewId={activeCrewId}
-            onSelect={handleSelect}
-            onCreateCustom={() => setPhase({ kind: 'custom' })}
-            onCreateSimilar={(product) =>
-              setPhase({
-                kind: 'custom',
-                initialProduct: product,
-                autoFocusVariant: true,
-              })
-            }
+            onSelect={(selection) => {
+              setResolver('browse')
+              handleSelect(selection)
+            }}
+            onBack={() => setPhase({ kind: 'search' })}
+            filters={browseFilters}
+            onFiltersChange={setBrowseFilters}
           />
         ) : (
           <AddItemForms
@@ -123,7 +165,7 @@ export default function ManualAddInventoryPage() {
             phase={phase}
             onCustomCreated={handleCustomCreated}
             onSaved={handleSaved}
-            onCancel={() => setPhase({ kind: 'search' })}
+            onCancel={() => setPhase({ kind: resolver })}
           />
         )}
       </div>

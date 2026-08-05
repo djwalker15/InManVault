@@ -360,6 +360,57 @@ describe('AddInventoryPage — Step 1 product resolution', () => {
     expect(screen.getByText(/search for a product/i)).toBeInTheDocument()
   })
 
+  it('browse: enter, select a product, cancel returns to browse', async () => {
+    makeSupabaseMock({
+      crew_members: {
+        select: {
+          data: [
+            {
+              crew_id: 'crew_abc',
+              role: 'admin',
+              crews: { name: 'Test', owner_id: 'user_1' },
+            },
+          ],
+          error: null,
+        },
+      },
+      products: {
+        select: { data: [masterProduct], error: null, count: 1 },
+      },
+      categories: { select: { data: [], error: null } },
+      unit_definitions: { select: { data: [], error: null } },
+      spaces: { select: { data: [], error: null } },
+    })
+    renderWithRouter(<AddInventoryPage />)
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /browse the catalog/i }),
+    )
+    await waitFor(() => {
+      expect(
+        screen.getByRole('list', { name: /catalog products/i }),
+      ).toBeInTheDocument()
+    })
+
+    // Selecting a browsed product lands in the same details step as search.
+    fireEvent.click(screen.getByRole('button', { name: /tomato paste/i }))
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /add to inventory/i }),
+      ).toBeInTheDocument()
+    })
+
+    // Backing out returns to browse, not search.
+    fireEvent.click(
+      screen.getByRole('button', { name: /pick a different product/i }),
+    )
+    await waitFor(() => {
+      expect(
+        screen.getByRole('list', { name: /catalog products/i }),
+      ).toBeInTheDocument()
+    })
+  })
+
   it('back-arrow routes to the add-method picker', async () => {
     makeSupabaseMock({
       crew_members: {

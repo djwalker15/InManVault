@@ -434,6 +434,8 @@ Use this document to verify each edge makes conceptual sense, and to annotate wi
 | 26 | Method 4 — Quick Add | Step 2 — Inventory Details |  |
 | 27 | Group A — Catalog Match | Group C — Create Custom | Create similar |
 | 28 | Group B — Existing Inventory | Group C — Create Custom | Create similar |
+| 29 | Step 1 — Product Resolution | Browse — Catalog | Browse |
+| 30 | Browse — Catalog | Step 2 — Inventory Details |  |
 
 #### 1. journeys/Adding Inventory.md → Entry: Inventory Page
 
@@ -602,6 +604,18 @@ Use this document to verify each edge makes conceptual sense, and to annotate wi
 **Data Flow:** Same seed as edge 27, taken from the existing row's Product.
 
 **UI Detail:** Third pill on the existing-inventory action row, after Restock this / Add another.
+
+#### 29. Step 1 — Product Resolution → Browse — Catalog (Browse)
+
+**Data Flow:** Reads products (RLS: master catalog + own crew), name-ordered, one growing 25-row range; categories for the filter chips. Source filter: All / `crew_id IS NULL` / `crew_id = active crew`.
+
+**UI Detail:** "Browse the catalog" text button under the search field; chip rows for source and category; Load more counter.
+
+#### 30. Browse — Catalog → Step 2 — Inventory Details
+
+**Data Flow:** Same `{kind:'product'}` selection as a Group A pick — Step 2 is unchanged.
+
+**UI Detail:** Backing out returns to browse with filters intact (lifted filter state, not a reload); Stay in Flow also returns to browse after a save.
 
 ### Entity References
 

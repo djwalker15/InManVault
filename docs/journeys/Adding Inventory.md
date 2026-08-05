@@ -37,7 +37,7 @@ Method 5 `/inventory/add/receipt` (`ReceiptScanPage`).
 
 ### Step 1 — Product Resolution: "What is this thing?"
 
-A search field with the prompt: "Search for a product..."
+A search field with the prompt: "Search for a product..." — plus a **Browse the catalog** entry point beneath it for when the user doesn't know what to type (see "Browsing the Catalog" below).
 
 As the user types, results appear in **three groups**:
 
@@ -87,6 +87,15 @@ Opens a creation form:
 Creates a crew-private [[Product]] (`crew_id` set to current [[Crew]]), then proceeds to Step 2.
 
 If the search returns no catalog matches and no existing inventory, Group C is emphasized: "No matches found. Create a new product?"
+
+#### Browsing the Catalog
+
+The **Browse the catalog** entry point (below the search field) swaps Step 1 into a browse view — for discovery ("what's in the catalog?") and dedup checks ("did we already create this?") that search can't answer:
+
+- **Source chips:** All · Catalog (`crew_id IS NULL`) · My crew's (`crew_id` = active [[Crew]]). The crew filter doubles as the crew's custom-products view (the listing half of the "own products" request — editing/retiring products is a separate concern).
+- **Category chips:** filter by `default_category_id` ([[Category]], system + crew-custom), single-select with an All chip.
+- Rows render like Group A results (name · brand · variant · size · source badge), ordered by name, 25 per page with **Load more**.
+- Selecting a row proceeds to Step 2 exactly like a search selection. Backing out of Step 2 returns to the browse view with filters intact; after a save, Stay in Flow also returns to browse when the item came from there.
 
 ### Step 2 — Inventory Details: "How much and where?"
 
@@ -314,7 +323,9 @@ FlowPurchaseDetail (insert, `source = receipt_scan`), [[Space]] (destination), [
 | Entity | Operation | When |
 |--------|-----------|------|
 | [[Product]] | Read (search catalog) | Step 1 — all methods |
+| [[Product]] | Read (browse, paginated + filtered) | Step 1 — catalog browse |
 | [[Product]] | Insert (crew-private) | Custom product creation |
+| [[Category]] | Read (filter chips) | Step 1 — catalog browse |
 | [[InventoryItem]] | Read (existing inventory) | Step 1 — Group B display |
 | [[InventoryItem]] | Insert | Step 2 — new item |
 | [[InventoryItem]] | Update (cached quantity, last_unit_cost) | Restock sub-flow |

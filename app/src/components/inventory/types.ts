@@ -32,6 +32,25 @@ export interface ExistingItemRow {
   locationPath: string
 }
 
+export type CatalogSource = 'all' | 'catalog' | 'mine'
+
+/**
+ * CatalogBrowser filter state, lifted into the caller so backing out of the
+ * details step and returning to browse restores the same view.
+ */
+export interface CatalogBrowserFilters {
+  source: CatalogSource
+  categoryId: string | null
+  /** How many pages are visible — "Load more" increments this. */
+  pages: number
+}
+
+export const INITIAL_BROWSE_FILTERS: CatalogBrowserFilters = {
+  source: 'all',
+  categoryId: null,
+  pages: 1,
+}
+
 export type Selection =
   | { kind: 'product'; product: ProductRow }
   | { kind: 'restock'; item: ExistingItemRow }
