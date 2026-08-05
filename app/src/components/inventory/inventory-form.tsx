@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { CtaTray, Field, PrimaryButton, TextButton } from '@/components/ds'
 import { SpaceSelect } from '@/components/spaces/space-select'
 import { useSupabase } from '@/lib/supabase'
+import { formatSize } from './format'
 import type { ProductRow, Selection } from './types'
 
 interface InventoryFormProps {
@@ -157,9 +158,8 @@ export function InventoryForm({
           <p className="font-body text-xs text-ink-600">
             {[
               product.brand,
-              product.size_value && product.size_unit
-                ? `${product.size_value} ${product.size_unit}`
-                : null,
+              product.variant,
+              formatSize(product.size_value, product.size_unit),
               product.crew_id === null ? 'Catalog' : 'Crew product',
             ]
               .filter(Boolean)

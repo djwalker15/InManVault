@@ -66,7 +66,14 @@ const items = [
 
 const products = [
   { product_id: 'p1', name: 'Cinnamon', brand: null, default_category_id: null },
-  { product_id: 'p2', name: 'Tomato Paste', brand: 'Heinz', default_category_id: null },
+  {
+    product_id: 'p2',
+    name: 'Tomato Paste',
+    brand: 'Heinz',
+    size_value: 6,
+    size_unit: 'oz',
+    default_category_id: null,
+  },
   { product_id: 'p3', name: 'Olive Oil', brand: null, default_category_id: null },
   { product_id: 'p4', name: 'Salt', brand: null, default_category_id: null },
 ]
@@ -118,6 +125,31 @@ describe('InventoryList', () => {
     })
     expect(screen.getAllByText(/low stock/i).length).toBeGreaterThan(0)
     expect(screen.getAllByText(/^displaced$/i).length).toBeGreaterThan(0)
+  })
+
+  it('shows pack size in the row subtitle and matches it in search', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    makeSupabaseMock({
+      inventory_items: { select: { data: items, error: null } },
+      products: { select: { data: products, error: null } },
+      categories: { select: { data: categories, error: null } },
+      spaces: { select: { data: spaces, error: null } },
+    })
+    render(<InventoryList crewId="crew_abc" />)
+    await waitFor(() => {
+      expect(screen.getByText('6 oz')).toBeInTheDocument()
+    })
+
+    // Typing the size narrows the list to the sized product.
+    fireEvent.change(screen.getByLabelText(/search inventory/i), {
+      target: { value: '6 oz' },
+    })
+    await waitFor(() => {
+      const names = screen
+        .getAllByRole('heading', { level: 3 })
+        .map((h) => h.textContent?.split('·')[0].trim())
+      expect(names).toEqual(['Tomato Paste'])
+    })
   })
 
   it('renders the crew location breadcrumb in each row', async () => {

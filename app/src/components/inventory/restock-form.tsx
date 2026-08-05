@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { CtaTray, Field, PrimaryButton, TextButton } from '@/components/ds'
 import { useSupabase } from '@/lib/supabase'
+import { formatSize } from './format'
 import type { ExistingItemRow } from './types'
 
 interface RestockFormProps {
@@ -59,11 +60,20 @@ export function RestockForm({ row, onSaved, onCancel }: RestockFormProps) {
         </p>
         <h2 className="font-display text-base font-bold text-ink-900">
           {row.product.name}
-          {row.product.brand ? (
-            <span className="ml-1 font-body text-sm font-normal text-ink-600">
-              ({row.product.brand})
-            </span>
-          ) : null}
+          {(() => {
+            const meta = [
+              row.product.brand,
+              row.product.variant,
+              formatSize(row.product.size_value, row.product.size_unit),
+            ]
+              .filter(Boolean)
+              .join(' · ')
+            return meta ? (
+              <span className="ml-1 font-body text-sm font-normal text-ink-600">
+                ({meta})
+              </span>
+            ) : null
+          })()}
         </h2>
         <p className="font-body text-sm leading-5 text-ink-700">
           Currently <strong>{row.item.quantity} {row.item.unit}</strong> at{' '}
