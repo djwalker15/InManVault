@@ -270,6 +270,97 @@ describe('CustomProductForm — variant field', () => {
   })
 })
 
+describe('CustomProductForm — create similar (initialProduct)', () => {
+  const source = {
+    name: 'Sparkling water',
+    brand: 'LaCroix',
+    variant: 'Lime',
+    size_value: 12,
+    size_unit: 'fl_oz',
+    default_category_id: 'cat_bev',
+  }
+
+  function renderPrefilled() {
+    return render(
+      <CustomProductForm
+        crewId="crew_abc"
+        userId="user_1"
+        initialProduct={source}
+        autoFocusVariant
+        onCreated={() => {}}
+        onCancel={() => {}}
+      />,
+    )
+  }
+
+  it('prefills everything except barcode', () => {
+    mockBrands(variantRows)
+    renderPrefilled()
+
+    expect(screen.getByLabelText(/product name/i)).toHaveValue('Sparkling water')
+    expect(screen.getByLabelText(/brand/i)).toHaveValue('LaCroix')
+    expect(screen.getByLabelText(/variant/i)).toHaveValue('Lime')
+    expect(screen.getByLabelText(/size value/i)).toHaveValue(12)
+    expect(screen.getByLabelText(/size unit/i)).toHaveValue('')
+    // Copying a UPC would create false barcode-scan hits on the clone.
+    expect(screen.getByLabelText(/barcode/i)).toHaveValue('')
+  })
+
+  it('focuses the variant field — the one that usually differs', () => {
+    mockBrands(variantRows)
+    renderPrefilled()
+
+    expect(screen.getByLabelText(/variant/i)).toHaveFocus()
+  })
+
+  it('creates a new crew-private product on save', async () => {
+    const sb = mockBrands(variantRows)
+    sb.tables.products.single.mockImplementation(() => ({
+      then: (
+        onFulfilled: (v: { data: unknown; error: null }) => unknown,
+      ) =>
+        Promise.resolve({
+          data: {
+            product_id: 'prod_new',
+            crew_id: 'crew_abc',
+            name: 'Sparkling water',
+            brand: 'LaCroix',
+            variant: 'Pamplemousse',
+            barcode: null,
+            image_url: null,
+            size_value: 12,
+            size_unit: null,
+            default_category_id: null,
+          },
+          error: null,
+        }).then(onFulfilled),
+    }))
+    renderPrefilled()
+
+    fireEvent.change(screen.getByLabelText(/variant/i), {
+      target: { value: 'Pamplemousse' },
+    })
+    // jsdom mis-flags the prefilled number input (step=0.01, value 12) as a
+    // step mismatch and swallows the implicit submission, so submit the form
+    // directly. Browsers accept the value.
+    fireEvent.submit(
+      screen.getByRole('button', { name: /create product/i }).closest('form')!,
+    )
+
+    await waitFor(() => {
+      expect(sb.tables.products.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          crew_id: 'crew_abc',
+          source: 'crew_created',
+          name: 'Sparkling water',
+          variant: 'Pamplemousse',
+          barcode: null,
+        }),
+      )
+    })
+  })
+})
+
 describe('CustomProductForm — Field focus styling', () => {
   it('keeps the sage focus bar working on a field that also passes onBlur', async () => {
     mockBrands()

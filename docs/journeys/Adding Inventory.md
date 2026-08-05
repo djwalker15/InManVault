@@ -50,6 +50,8 @@ As the user types, results appear in **three groups**:
 
 Selecting one moves to Step 2.
 
+Each catalog row also offers **Create similar** — starts the Group C form prefilled from this [[Product]] (name, brand, variant, size, category; **never the barcode**, since UPCs are unique per variant). The variant field is focused on entry, as it's usually the one field that differs. Saving creates a new crew-private Product; the source row is untouched.
+
 #### Group B — Your Existing Inventory
 
 [[InventoryItem]]s the [[Crew]] already has for matching [[Product]]s. Each result shows:
@@ -58,9 +60,10 @@ Selecting one moves to Step 2.
 - Current quantity
 - Location path (e.g., "Kitchen > Back > Above > Cabinet 1")
 
-Two actions per result:
+Three actions per result:
 - **Restock this** → skips product selection, jumps to the Restock Sub-Flow (simplified Step 2 with just quantity to add and optional cost)
 - **Add another** → creates a new [[InventoryItem]] for the same [[Product]] (e.g., a second bottle in a different location). Proceeds to full Step 2.
+- **Create similar** → a *different* [[Product]] in the same family (another flavor, another brand): opens the Group C form prefilled from this row's Product (barcode excluded, variant focused), same as the catalog-row action.
 
 > This prevents accidental duplicates and makes restocking a natural part of the add flow.
 

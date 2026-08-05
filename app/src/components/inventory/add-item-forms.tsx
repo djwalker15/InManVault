@@ -12,7 +12,22 @@ import type { ProductRow, Selection } from './types'
  *  - `restock`  — add quantity to an existing InventoryItem
  */
 export type AddPhase =
-  | { kind: 'custom'; initialName?: string; initialBarcode?: string }
+  | {
+      kind: 'custom'
+      initialName?: string
+      initialBarcode?: string
+      /** "Create similar" seed — see CustomProductForm.initialProduct. */
+      initialProduct?: Pick<
+        ProductRow,
+        | 'name'
+        | 'brand'
+        | 'variant'
+        | 'size_value'
+        | 'size_unit'
+        | 'default_category_id'
+      >
+      autoFocusVariant?: boolean
+    }
   | { kind: 'selected'; selection: Selection }
   | { kind: 'restock'; selection: Extract<Selection, { kind: 'restock' }> }
 
@@ -43,6 +58,8 @@ export function AddItemForms({
         userId={userId}
         initialName={phase.initialName}
         initialBarcode={phase.initialBarcode}
+        initialProduct={phase.initialProduct}
+        autoFocusVariant={phase.autoFocusVariant}
         onCreated={onCustomCreated}
         onCancel={onCancel}
       />
