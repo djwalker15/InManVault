@@ -159,6 +159,7 @@ describe('InventoryForm', () => {
       expect(sb.rpc).toHaveBeenCalledWith(
         'record_purchase',
         expect.objectContaining({
+          p_crew_id: 'crew_abc',
           p_product_id: 'prod_1',
           p_quantity: 2,
           p_unit: 'oz',

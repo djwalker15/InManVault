@@ -20,6 +20,8 @@ interface TemplateNode {
 }
 
 interface TemplateBrowserProps {
+  /** The crew the template is stamped into (the UI's active crew). */
+  crewId: string
   /** True when the active crew has any spaces beyond a Premises — drives
    *  the merge/replace prompt. */
   hasExistingSpaces: boolean
@@ -28,6 +30,7 @@ interface TemplateBrowserProps {
 }
 
 export function TemplateBrowser({
+  crewId,
   hasExistingSpaces,
   onApplied,
 }: TemplateBrowserProps) {
@@ -79,6 +82,7 @@ export function TemplateBrowser({
     try {
       const { data, error } = await supabase.rpc('apply_space_template', {
         p_template_id: template.template_id,
+        p_crew_id: crewId,
         p_mode: mode,
       })
       if (error) throw error

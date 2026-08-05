@@ -108,6 +108,7 @@ export function InventoryForm({
     setSubmitting(true)
     try {
       const { data, error: rpcError } = await supabase.rpc('record_purchase', {
+        p_crew_id: crewId,
         p_product_id: product.product_id,
         p_quantity: quantityNum,
         p_unit: unit,

@@ -319,7 +319,7 @@ FlowPurchaseDetail (insert, `source = receipt_scan`), [[Space]] (destination), [
 | [[UnitDefinition]] | Read (unit dropdown) | Step 2 — unit selection |
 | [[ProductAlias]] | Read (resolve) / Upsert (learn) | Method 5 — receipt line resolution |
 
-> **Atomic operations:** Individual manual adds and quick adds go through the `record_purchase` RPC. Bulk import and receipt scan are wrapped in the atomic `bulk_import_inventory` Postgres RPC (per-row subtransactions — consistent with the existing `record_purchase`/`restock_inventory` pattern, rather than a separate edge function); receipt scan passes `p_source = 'receipt_scan'`. Restock is a lightweight operation (one Flow + InventoryItem update) via `restock_inventory`. Receipt parsing/resolution runs in the `parse-receipt` edge function (Claude vision + `search_products_fuzzy` + [[ProductAlias]] lookup); the commit itself reuses the RPC.
+> **Atomic operations:** Individual manual adds and quick adds go through the `record_purchase` RPC, which takes an explicit `p_crew_id` (the UI's active crew) validated by `is_crew_member` — the RPC never guesses the caller's crew from memberships. Bulk import and receipt scan are wrapped in the atomic `bulk_import_inventory` Postgres RPC (per-row subtransactions — consistent with the existing `record_purchase`/`restock_inventory` pattern, rather than a separate edge function); receipt scan passes `p_source = 'receipt_scan'`. Restock is a lightweight operation (one Flow + InventoryItem update) via `restock_inventory`. Receipt parsing/resolution runs in the `parse-receipt` edge function (Claude vision + `search_products_fuzzy` + [[ProductAlias]] lookup); the commit itself reuses the RPC.
 
 ---
 

@@ -118,6 +118,7 @@ describe('QuickAddPage', () => {
     expect(sb.rpc).toHaveBeenCalledWith(
       'record_purchase',
       expect.objectContaining({
+        p_crew_id: 'crew_abc',
         p_product_id: 'prod_custom_1',
         p_quantity: 1,
         p_unit: 'count',
@@ -174,7 +175,10 @@ describe('QuickAddPage', () => {
     await waitFor(() => {
       expect(sb.rpc).toHaveBeenCalledWith(
         'record_purchase',
-        expect.objectContaining({ p_product_id: 'prod_master_1' }),
+        expect.objectContaining({
+          p_crew_id: 'crew_abc',
+          p_product_id: 'prod_master_1',
+        }),
       )
     })
     expect(sb.tables.products.insert).not.toHaveBeenCalled()

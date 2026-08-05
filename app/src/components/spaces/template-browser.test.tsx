@@ -42,7 +42,7 @@ describe('TemplateBrowser', () => {
       space_templates: { select: { data: sampleTemplates, error: null } },
     })
     render(
-      <TemplateBrowser hasExistingSpaces={false} onApplied={() => {}} />,
+      <TemplateBrowser crewId="crew_abc" hasExistingSpaces={false} onApplied={() => {}} />,
     )
     fireEvent.click(screen.getByRole('button', { name: /use a template/i }))
     expect(
@@ -65,7 +65,7 @@ describe('TemplateBrowser', () => {
     )
     const onApplied = vi.fn()
     render(
-      <TemplateBrowser hasExistingSpaces={false} onApplied={onApplied} />,
+      <TemplateBrowser crewId="crew_abc" hasExistingSpaces={false} onApplied={onApplied} />,
     )
     fireEvent.click(screen.getByRole('button', { name: /use a template/i }))
     await waitFor(() => {
@@ -75,6 +75,7 @@ describe('TemplateBrowser', () => {
     await waitFor(() => {
       expect(sb.rpc).toHaveBeenCalledWith('apply_space_template', {
         p_template_id: 't_kitchen',
+        p_crew_id: 'crew_abc',
         p_mode: 'merge',
       })
     })
@@ -89,7 +90,7 @@ describe('TemplateBrowser', () => {
       { apply_space_template: { data: 7, error: null } },
     )
     render(
-      <TemplateBrowser hasExistingSpaces={true} onApplied={() => {}} />,
+      <TemplateBrowser crewId="crew_abc" hasExistingSpaces={true} onApplied={() => {}} />,
     )
     fireEvent.click(screen.getByRole('button', { name: /use a template/i }))
     await waitFor(() => {
@@ -115,7 +116,7 @@ describe('TemplateBrowser', () => {
       { apply_space_template: { data: 7, error: null } },
     )
     render(
-      <TemplateBrowser hasExistingSpaces={true} onApplied={() => {}} />,
+      <TemplateBrowser crewId="crew_abc" hasExistingSpaces={true} onApplied={() => {}} />,
     )
     fireEvent.click(screen.getByRole('button', { name: /use a template/i }))
     await waitFor(() => {
@@ -126,6 +127,7 @@ describe('TemplateBrowser', () => {
     await waitFor(() => {
       expect(sb.rpc).toHaveBeenCalledWith('apply_space_template', {
         p_template_id: 't_kitchen',
+        p_crew_id: 'crew_abc',
         p_mode: 'replace',
       })
     })
@@ -136,7 +138,7 @@ describe('TemplateBrowser', () => {
       space_templates: { select: { data: sampleTemplates, error: null } },
     })
     render(
-      <TemplateBrowser hasExistingSpaces={false} onApplied={() => {}} />,
+      <TemplateBrowser crewId="crew_abc" hasExistingSpaces={false} onApplied={() => {}} />,
     )
     fireEvent.click(screen.getByRole('button', { name: /use a template/i }))
     await waitFor(() => {
