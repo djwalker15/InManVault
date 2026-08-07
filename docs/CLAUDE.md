@@ -1,6 +1,6 @@
 # CLAUDE.md — InMan Project Context
 
-> **Last updated:** July 29, 2026 — content covers through the outbound inventory lifecycle (adjust / use / waste / remove), Feature 12 Opening a Package (merged), and the v1.1 waste slice. See **Superseded Guidance** below for reversed decisions.
+> **Last updated:** August 7, 2026 — content covers through the outbound inventory lifecycle (adjust / use / waste / remove), Feature 12 Opening a Package (merged), the v1.1 waste slice, and the crew-scoped media storage decision. See **Superseded Guidance** below for reversed decisions.
 > **Repositories:** djwalker15/InMan (app), djwalker15/InManVault (Obsidian vault)
 > **Owner:** Davontae Walker (djwalker@tenacioustech.net)
 
@@ -89,6 +89,16 @@ Multi-step operations that must fully succeed or fully roll back are implemented
 - **Kiosk action routing** — edge functions validate kiosk token, verify allowed actions, execute operations via service role key, set `performed_by` from identified crew member
 
 **Crew resolution in SECURITY DEFINER RPCs:** an RPC never guesses the caller's crew (e.g. "most-recent membership") — that diverges from the frontend's active-crew preference for multi-crew users. **Creation RPCs take an explicit `p_crew_id`** and validate it with the membership helpers (`is_crew_member`, `is_crew_admin_or_owner`) — `record_purchase`, `bulk_import_inventory`, `apply_space_template`. **Item-scoped RPCs derive the crew from the target row** and then check membership — `restock_inventory`, `open_package`. (Decided 2026-08-03 after a staging bug: `record_purchase` guessed the newest membership while the UI operated in the pinned active crew, so freshly created crew products failed the "Product not accessible" check.)
+
+### Media Storage: one crew-scoped private bucket, signed URLs
+
+*(Decided 2026-08-07 — full design in `cross-cutting/Media Storage.md`.)* All crew-uploaded images (product photos, waste photos, space pictures, future recipe photos) live in **one private bucket `crew-media`** with crew-first paths (`<crew_id>/<domain>/[<entity_id>/]<uuid>.jpg`). Storage RLS keys `is_crew_member` on the first path segment; select/insert/delete only — objects are immutable, replace = upload new + delete old. Served via **signed URLs** (TTL 1 h) minted through a batched module-level cache in `app/src/lib/media.ts`; never a public bucket.
+
+- `products.image_url` is **dual-mode**: full external `http(s)` URL (master catalog, server-written by the barcode-lookup pipeline) or bare `crew-media` path (crew uploads). One resolver decides at render. No second column.
+- v1 uploads attach to **crew-private products only** (`crew_id` not null), matching the name/brand edit gate. Master-catalog products get images from the barcode API, not from crews.
+- `waste_events.photo_url` holds a path despite its name (shipped immutable slice); new columns use `image_path` (e.g. `spaces.image_path`).
+- Client-side downscale before upload (1500 px longest edge, JPEG q0.8). Orphaned objects on soft-delete are accepted in v1.
+- The user-scoped `feedback-screenshots` bucket stays separate — feedback can be crew-less.
 
 ### Unit Conversion: Within-Category
 
@@ -596,7 +606,7 @@ entry gives the original decision, what replaced it, and the evidence.
 
 ## Reference Documents
 
-- `docs/` — Complete Obsidian vault with 99 markdown files: 48 entities, 13 features, 26 active user journeys (#1–#28, 2 absorbed), 3 cross-cutting concerns, plus index, plan, edge-review, retrospective, and session-handoff notes. Hosted at github.com/djwalker15/InManVault.
+- `docs/` — Complete Obsidian vault with 100 markdown files: 48 entities, 13 features, 26 active user journeys (#1–#28, 2 absorbed), 4 cross-cutting concerns, plus index, plan, edge-review, retrospective, and session-handoff notes. Hosted at github.com/djwalker15/InManVault.
 - `inman-vault/InMan Implementation Plan.md` — MVP scope, implementation sequence, edge function inventory, route map, seed data strategy
 - `InMan_ERD.mermaid` — Full entity relationship diagram with 47 of the 48 entities and their relationships (missing only `Feedback`, Feature 13)
 - FigJam diagrams — Onboarding flow (Paths A+B, Path C) and ERD cluster diagrams in Figma
