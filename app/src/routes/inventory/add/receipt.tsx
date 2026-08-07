@@ -17,7 +17,7 @@ import {
   toPayloadRows,
   writeAliases,
 } from '@/components/inventory/receipt/api'
-import { downscaleImage } from '@/components/inventory/receipt/downscale'
+import { downscaleImage } from '@/lib/downscale'
 import { toRowState, type RowState } from '@/components/inventory/receipt/types'
 import { useActiveCrew } from '@/lib/active-crew'
 import { useSupabase } from '@/lib/supabase'

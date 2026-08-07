@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { vi, type Mock } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { useSupabase } from '@/lib/supabase'
 
@@ -51,11 +51,22 @@ export interface TableMock {
   maybeSingle: ReturnType<typeof vi.fn>
 }
 
+export interface StorageBucketMock {
+  upload: ReturnType<typeof vi.fn>
+  createSignedUrl: ReturnType<typeof vi.fn>
+  createSignedUrls: ReturnType<typeof vi.fn>
+  remove: ReturnType<typeof vi.fn>
+}
+
 export interface SupabaseMock {
   client: SupabaseClient
   from: ReturnType<typeof vi.fn>
   rpc: ReturnType<typeof vi.fn>
   tables: Record<string, TableMock>
+  storage: {
+    from: Mock<(bucket: string) => StorageBucketMock>
+    buckets: Record<string, StorageBucketMock>
+  }
 }
 
 const DEFAULT_RESPONSE: QueryResult = { data: null, error: null }
@@ -128,6 +139,34 @@ function makeBuilder(config: TableConfig): TableMock & PromiseLike<QueryResult> 
   return builder as TableMock & PromiseLike<QueryResult>
 }
 
+// Default-success storage bucket: upload echoes the path, signed URLs
+// resolve to a deterministic fake host. Tests override behavior through
+// the exposed vi.fn's (e.g. `.mockResolvedValueOnce({...})`).
+function makeStorageBucket(): StorageBucketMock {
+  return {
+    upload: vi.fn((path: string) =>
+      Promise.resolve({ data: { path }, error: null }),
+    ),
+    createSignedUrl: vi.fn((path: string) =>
+      Promise.resolve({
+        data: { signedUrl: `https://signed.test/${path}` },
+        error: null,
+      }),
+    ),
+    createSignedUrls: vi.fn((paths: string[]) =>
+      Promise.resolve({
+        data: paths.map((path) => ({
+          error: null,
+          path,
+          signedUrl: `https://signed.test/${path}`,
+        })),
+        error: null,
+      }),
+    ),
+    remove: vi.fn(() => Promise.resolve({ data: [], error: null })),
+  }
+}
+
 export function makeSupabaseMock(
   config: SupabaseConfig = {},
   rpcs: RpcResultMap = {},
@@ -150,9 +189,19 @@ export function makeSupabaseMock(
     return Promise.resolve(result)
   })
 
-  const client = { from, rpc } as unknown as SupabaseClient
+  const buckets: Record<string, StorageBucketMock> = {}
+  const storageFrom = vi.fn((bucket: string) => {
+    buckets[bucket] ??= makeStorageBucket()
+    return buckets[bucket]
+  })
+
+  const client = {
+    from,
+    rpc,
+    storage: { from: storageFrom },
+  } as unknown as SupabaseClient
 
   vi.mocked(useSupabase).mockReturnValue(client)
 
-  return { client, from, rpc, tables }
+  return { client, from, rpc, tables, storage: { from: storageFrom, buckets } }
 }
