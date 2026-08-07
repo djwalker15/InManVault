@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSupabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
-import type { SpaceNode } from './types'
+import { SPACE_COLUMNS, type SpaceNode } from './types'
 
 interface SpaceSelectProps {
   crewId: string
@@ -46,7 +46,7 @@ export function SpaceSelect({
     async function load() {
       const { data } = await supabase
         .from('spaces')
-        .select('space_id, parent_id, unit_type, name, deleted_at')
+        .select(SPACE_COLUMNS)
         .eq('crew_id', crewId)
         .is('deleted_at', null)
         .order('created_at', { ascending: true })

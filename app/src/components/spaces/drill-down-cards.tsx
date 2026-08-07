@@ -1,7 +1,20 @@
 import { useEffect, useRef } from 'react'
 import { ChevronRight, MoreHorizontal, Package } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useSignedUrl } from '@/lib/media'
 import { spacePhotoFor } from './space-photo'
+
+/**
+ * Banner background for a space: the real photo (signed URL) when
+ * `image_path` is set and resolved, the deterministic warm gradient
+ * otherwise (null / loading / error).
+ */
+function useSpaceBackground(node: SpaceNode): string {
+  const photoUrl = useSignedUrl(node.image_path)
+  return photoUrl
+    ? `url(${photoUrl}) center / cover no-repeat`
+    : spacePhotoFor(node.space_id)
+}
 import {
   UNIT_TYPE_GLYPH,
   UNIT_TYPE_LABEL,
@@ -86,6 +99,7 @@ interface ChildCardProps {
 export function ChildCard({ node, kids, onOpen, onMenu, isNew }: ChildCardProps) {
   const meta = UNIT_TYPE_LABEL[node.unit_type]
   const glyph = UNIT_TYPE_GLYPH[node.unit_type]
+  const background = useSpaceBackground(node)
   const hasKids = kids.length > 0
   const cardRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -114,7 +128,7 @@ export function ChildCard({ node, kids, onOpen, onMenu, isNew }: ChildCardProps)
     >
       <div
         className="relative flex h-[92px] items-start justify-between p-2.5"
-        style={{ background: spacePhotoFor(node.space_id), backgroundSize: 'cover' }}
+        style={{ background, backgroundSize: 'cover' }}
       >
         <span className="rounded-full bg-ink-900/30 px-2 py-1 font-display text-[9px] font-bold uppercase tracking-[0.6px] text-white/90 backdrop-blur-[2px]">
           {meta}
@@ -167,11 +181,12 @@ interface ScopeHeroProps {
 export function ScopeHero({ scope, kids }: ScopeHeroProps) {
   const meta = UNIT_TYPE_LABEL[scope.unit_type]
   const glyph = UNIT_TYPE_GLYPH[scope.unit_type]
+  const background = useSpaceBackground(scope)
   return (
     <div className="px-6 pb-3.5 pt-2">
       <div
         className="relative flex min-h-[132px] flex-col justify-end overflow-hidden rounded-[18px] p-[18px] shadow-ambient-md"
-        style={{ background: spacePhotoFor(scope.space_id), backgroundSize: 'cover' }}
+        style={{ background, backgroundSize: 'cover' }}
       >
         <div className="absolute left-[18px] top-3.5 flex items-center gap-2">
           <span

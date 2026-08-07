@@ -13,7 +13,7 @@ import {
 import { TemplateBrowser } from '@/components/spaces/template-browser'
 import { SpacesDrillDown } from '@/components/spaces/drill-down'
 import { TreeEditor } from '@/components/spaces/tree-editor'
-import type { SpaceNode, UnitType } from '@/components/spaces/types'
+import { SPACE_COLUMNS, type SpaceNode, type UnitType } from '@/components/spaces/types'
 import { useActiveCrew } from '@/lib/active-crew'
 import { useRecentIds } from '@/lib/recent-ids'
 import { useSupabase } from '@/lib/supabase'
@@ -69,7 +69,7 @@ export default function SpacesPage() {
       const [{ data: spaceRows }, { data: itemRows }] = await Promise.all([
         supabase
           .from('spaces')
-          .select('space_id, parent_id, unit_type, name, deleted_at')
+          .select(SPACE_COLUMNS)
           .eq('crew_id', activeCrewId)
           .is('deleted_at', null)
           .order('created_at', { ascending: true }),
@@ -102,11 +102,17 @@ export default function SpacesPage() {
     [nodes],
   )
 
+  function patchNodeImage(space_id: string, image_path: string | null) {
+    setNodes((prev) =>
+      prev.map((n) => (n.space_id === space_id ? { ...n, image_path } : n)),
+    )
+  }
+
   async function refetchSpaces() {
     if (!activeCrewId) return
     const { data } = await supabase
       .from('spaces')
-      .select('space_id, parent_id, unit_type, name, deleted_at')
+      .select(SPACE_COLUMNS)
       .eq('crew_id', activeCrewId)
       .is('deleted_at', null)
       .order('created_at', { ascending: true })
@@ -128,7 +134,7 @@ export default function SpacesPage() {
         name: input.name,
         created_by: user.id,
       })
-      .select('space_id, parent_id, unit_type, name, deleted_at')
+      .select(SPACE_COLUMNS)
       .single()
     if (error) throw error
     if (!data) throw new Error('Insert returned no row')
@@ -240,21 +246,25 @@ export default function SpacesPage() {
             {view === 'cards' ? (
               <SpacesDrillDown
                 nodes={nodes}
+                crewId={activeCrewId ?? ''}
                 onAddChild={insertNode}
                 onRename={rename}
                 onReclassify={reclassify}
                 onDelete={softDelete}
+                onImageChanged={patchNodeImage}
                 emptyState="Loading…"
                 recentIds={recent.ids}
               />
             ) : (
               <TreeEditor
                 nodes={nodes}
+                crewId={activeCrewId ?? ''}
                 onAddChild={insertNode}
                 onAddSibling={insertNode}
                 onRename={rename}
                 onReclassify={reclassify}
                 onDelete={softDelete}
+                onImageChanged={patchNodeImage}
                 emptyState="Loading…"
                 recentIds={recent.ids}
               />

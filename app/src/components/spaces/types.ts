@@ -13,7 +13,13 @@ export interface SpaceNode {
   unit_type: UnitType
   name: string
   deleted_at?: string | null
+  /** crew-media storage path for the space photo (see Media Storage). */
+  image_path?: string | null
 }
+
+/** The select list matching SpaceNode — keep the two in lockstep. */
+export const SPACE_COLUMNS =
+  'space_id, parent_id, unit_type, name, deleted_at, image_path'
 
 export const UNIT_TYPE_GLYPH: Record<UnitType, string> = {
   premises: '🏠',
