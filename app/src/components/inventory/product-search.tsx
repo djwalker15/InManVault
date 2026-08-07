@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
-import { TextButton } from '@/components/ds'
+import { ProductThumb, TextButton } from '@/components/ds'
 import { useSupabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { formatSize } from './format'
@@ -320,18 +320,7 @@ export function ProductResultRow({
         onClick={onClick}
         className="flex w-full items-center gap-3 rounded-lg text-left transition active:scale-[0.99] hover:bg-paper-200"
       >
-        <span
-          aria-hidden
-          className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-paper-50"
-        >
-          {product.image_url ? (
-            <img src={product.image_url} alt="" className="size-full object-cover" />
-          ) : (
-            <span className="font-display text-base font-bold text-ink-500">
-              {product.name.slice(0, 1).toUpperCase()}
-            </span>
-          )}
-        </span>
+        <ProductThumb imageUrl={product.image_url} name={product.name} />
         <span className="flex min-w-0 flex-col">
           <span className="font-display text-sm font-bold text-ink-900">
             {product.name}
@@ -377,22 +366,7 @@ function ExistingResultRow({
   return (
     <li className="flex flex-col gap-2 rounded-xl bg-paper-100 p-3">
       <div className="flex items-start gap-3">
-        <span
-          aria-hidden
-          className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-paper-50"
-        >
-          {row.product.image_url ? (
-            <img
-              src={row.product.image_url}
-              alt=""
-              className="size-full object-cover"
-            />
-          ) : (
-            <span className="font-display text-base font-bold text-ink-500">
-              {row.product.name.slice(0, 1).toUpperCase()}
-            </span>
-          )}
-        </span>
+        <ProductThumb imageUrl={row.product.image_url} name={row.product.name} />
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="font-display text-sm font-bold text-ink-900">
             {row.product.name}

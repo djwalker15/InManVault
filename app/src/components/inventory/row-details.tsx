@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useUser } from '@clerk/clerk-react'
-import { Chip } from '@/components/ds'
+import { Chip, ProductThumb } from '@/components/ds'
 import { useSupabase } from '@/lib/supabase'
 import { ALERT_LABEL, type InventoryAlert } from './inventory-status'
 import { RowActions } from './row-actions'
@@ -114,22 +114,10 @@ export function InventoryRowDetails(props: InventoryRowDetailsProps) {
     >
       <Section title="Product">
         <div className="flex items-start gap-3">
-          <span
-            aria-hidden
-            className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-paper-50"
-          >
-            {props.productImageUrl ? (
-              <img
-                src={props.productImageUrl}
-                alt=""
-                className="size-full object-cover"
-              />
-            ) : (
-              <span className="font-display text-base font-bold text-ink-500">
-                {props.productName.slice(0, 1).toUpperCase()}
-              </span>
-            )}
-          </span>
+          <ProductThumb
+            imageUrl={props.productImageUrl}
+            name={props.productName}
+          />
           <div className="flex min-w-0 flex-col">
             <p className="font-display text-sm font-bold text-ink-900">
               {props.productName}
