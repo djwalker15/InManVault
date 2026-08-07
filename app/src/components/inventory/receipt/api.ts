@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ImportPayloadRow } from '../import/types'
-import type { DownscaledImage } from './downscale'
+import type { DownscaledImage } from '@/lib/downscale'
 import type { ParseReceiptResult, RowState } from './types'
 
 /** Invokes the parse-receipt edge function with a downscaled image. */
