@@ -14,6 +14,7 @@ A physical node in the organizational hierarchy. Uses a self-referencing `parent
 | `unit_type` | enum | One of 7 types (see hierarchy below) |
 | `parent_id` | FK → Space | Nullable — null only for root Premises |
 | `notes` | text | |
+| `image_path` | text | Nullable — `crew-media` storage path (`<crew_id>/spaces/<space_id>/<uuid>.jpg`, see [[Media Storage]]). Photo-only, one per space in v1; the deterministic warm-gradient placeholder stays as the fallback. Rendered via signed URL in the drill-down cards. |
 | `created_at` | timestamp | |
 | `updated_at` | timestamp | Auto-maintained by trigger |
 | `deleted_at` | timestamp | Nullable — soft delete |

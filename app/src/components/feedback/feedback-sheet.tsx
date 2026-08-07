@@ -30,6 +30,7 @@ const TYPE_OPTIONS: {
 ]
 
 const MAX_MESSAGE = 4000
+const MAX_SCREENSHOTS = 5
 
 export function FeedbackSheet({
   open,
@@ -42,7 +43,7 @@ export function FeedbackSheet({
   const messageId = useId()
   const [type, setType] = useState<FeedbackType>('bug')
   const [message, setMessage] = useState('')
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
   const [contactOk, setContactOk] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -53,9 +54,14 @@ export function FeedbackSheet({
   function reset() {
     setType('bug')
     setMessage('')
-    setFile(null)
+    setFiles([])
     setContactOk(false)
     setError(null)
+  }
+
+  function addFiles(picked: FileList | null) {
+    if (!picked?.length) return
+    setFiles((prev) => [...prev, ...Array.from(picked)].slice(0, MAX_SCREENSHOTS))
   }
 
   function handleClose() {
@@ -70,9 +76,13 @@ export function FeedbackSheet({
     setSubmitting(true)
     setError(null)
     try {
-      let screenshotPath: string | null = null
-      if (file && userId) {
-        screenshotPath = await uploadFeedbackScreenshot(supabase, userId, file)
+      const screenshotPaths: string[] = []
+      if (userId) {
+        for (const file of files) {
+          screenshotPaths.push(
+            await uploadFeedbackScreenshot(supabase, userId, file),
+          )
+        }
       }
       await submitFeedback(supabase, {
         feedback_type: type,
@@ -80,7 +90,8 @@ export function FeedbackSheet({
         contact_ok: contactOk,
         context: gatherContext(),
         crew_id: crewId,
-        screenshot_path: screenshotPath,
+        screenshot_paths: screenshotPaths,
+        screenshot_path: screenshotPaths[0] ?? null,
       })
       reset()
       onSubmitted()
@@ -157,39 +168,49 @@ export function FeedbackSheet({
           />
         </div>
 
-        {/* Screenshot */}
-        <div className="flex flex-col">
+        {/* Screenshots */}
+        <div className="flex flex-col gap-2">
           <span className="font-display text-sm font-bold uppercase tracking-[0.35px] text-ink-900">
-            Screenshot <span className="font-body lowercase text-ink-500">(optional)</span>
+            Screenshots <span className="font-body lowercase text-ink-500">(optional, up to {MAX_SCREENSHOTS})</span>
           </span>
-          {file ? (
-            <div className="mt-2 flex items-center justify-between rounded-xl bg-paper-100 px-4 py-3">
+          {files.map((file, index) => (
+            <div
+              key={`${file.name}-${index}`}
+              className="flex items-center justify-between rounded-xl bg-paper-100 px-4 py-3"
+            >
               <span className="truncate font-body text-sm text-ink-700">
                 {file.name}
               </span>
               <button
                 type="button"
-                aria-label="Remove screenshot"
-                onClick={() => setFile(null)}
+                aria-label={`Remove screenshot ${file.name}`}
+                onClick={() =>
+                  setFiles((prev) => prev.filter((_, i) => i !== index))
+                }
                 className="ml-3 flex size-7 shrink-0 items-center justify-center rounded-full text-ink-600 transition hover:bg-paper-200"
               >
                 <X size={16} />
               </button>
             </div>
-          ) : (
+          ))}
+          {files.length < MAX_SCREENSHOTS && (
             <label
               className={cn(
-                'mt-2 flex cursor-pointer items-center gap-2 rounded-xl bg-paper-100 px-4 py-3',
+                'flex cursor-pointer items-center gap-2 rounded-xl bg-paper-100 px-4 py-3',
                 'font-body text-sm text-ink-600 transition hover:bg-paper-200',
               )}
             >
               <ImagePlus size={16} aria-hidden />
-              Attach an image
+              {files.length === 0 ? 'Attach images' : 'Add another image'}
               <input
                 type="file"
                 accept="image/*"
+                multiple
                 className="sr-only"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => {
+                  addFiles(e.target.files)
+                  e.target.value = ''
+                }}
               />
             </label>
           )}

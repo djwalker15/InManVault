@@ -20,6 +20,7 @@ import type { SpaceNode, UnitType } from './types'
 
 interface SpacesDrillDownProps {
   nodes: SpaceNode[]
+  crewId: string
   onAddChild: (input: {
     parent_id: string | null
     unit_type: UnitType
@@ -28,6 +29,8 @@ interface SpacesDrillDownProps {
   onRename: (space_id: string, name: string) => Promise<void>
   onReclassify: (space_id: string, unit_type: UnitType) => Promise<void>
   onDelete: (space_ids: string[]) => Promise<void>
+  /** The photo control commits its own writes; hosts patch node state here. */
+  onImageChanged: (space_id: string, image_path: string | null) => void
   emptyState?: string
   /** Ids of just-created spaces — their cards flash and scroll into view. */
   recentIds?: ReadonlySet<string>
@@ -48,10 +51,12 @@ function getErrorMessage(err: unknown): string {
 
 export function SpacesDrillDown({
   nodes,
+  crewId,
   onAddChild,
   onRename,
   onReclassify,
   onDelete,
+  onImageChanged,
   emptyState,
   recentIds,
 }: SpacesDrillDownProps) {
@@ -275,9 +280,13 @@ export function SpacesDrillDown({
         {sheet?.type === 'rename' && target && (
           <RenameForm
             node={target}
+            crewId={crewId}
             busy={busy}
             error={error}
             onSubmit={(name) => handleRename(target.space_id, name)}
+            onImageChange={(image_path) =>
+              onImageChanged(target.space_id, image_path)
+            }
             onCancel={closeSheet}
           />
         )}

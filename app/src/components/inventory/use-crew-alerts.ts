@@ -22,6 +22,7 @@ interface RawProduct {
   product_id: string
   name: string
   brand: string | null
+  image_url: string | null
 }
 
 interface RawSpace {
@@ -34,6 +35,7 @@ export interface AlertRow {
   inventoryItemId: string
   productName: string
   productBrand: string | null
+  productImageUrl: string | null
   quantity: number
   unit: string
   locationPath: string
@@ -121,7 +123,7 @@ export function useCrewAlerts(crewId: string | null): CrewAlerts {
       const [productsRes, spacesRes] = await Promise.all([
         supabase
           .from('products')
-          .select('product_id, name, brand')
+          .select('product_id, name, brand, image_url')
           .in('product_id', productIds)
           .is('deleted_at', null),
         supabase
@@ -165,6 +167,7 @@ export function useCrewAlerts(crewId: string | null): CrewAlerts {
           inventoryItemId: item.inventory_item_id,
           productName: product?.name ?? 'Unknown product',
           productBrand: product?.brand ?? null,
+          productImageUrl: product?.image_url ?? null,
           quantity: item.quantity,
           unit: item.unit,
           locationPath: buildLocationPath(item.current_space_id, spaces),

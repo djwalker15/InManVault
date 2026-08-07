@@ -3,6 +3,7 @@ import { Pencil, Plus, Repeat, Trash2 } from 'lucide-react'
 import { Field, PrimaryButton, SecondaryButton } from '@/components/ds'
 import { cn } from '@/lib/utils'
 import { ALLOWED_CHILD_TYPES, SMART_CHILD_TYPE } from './tree-helpers'
+import { SpacePhotoControl } from './space-photo-control'
 import {
   UNIT_TYPE_GLYPH,
   UNIT_TYPE_LABEL,
@@ -243,13 +244,24 @@ export function AddForm({ parent, busy, error, onSubmit, onCancel }: AddFormProp
 
 interface RenameFormProps {
   node: SpaceNode
+  crewId: string
   busy: boolean
   error: string | null
   onSubmit: (name: string) => void
+  /** Fired when the space photo is set/replaced/removed (commits immediately). */
+  onImageChange: (image_path: string | null) => void
   onCancel: () => void
 }
 
-export function RenameForm({ node, busy, error, onSubmit, onCancel }: RenameFormProps) {
+export function RenameForm({
+  node,
+  crewId,
+  busy,
+  error,
+  onSubmit,
+  onImageChange,
+  onCancel,
+}: RenameFormProps) {
   const [name, setName] = useState(node.name)
   const trimmed = name.trim()
   const valid = trimmed.length >= 1 && trimmed.length <= 64 && trimmed !== node.name
@@ -269,6 +281,13 @@ export function RenameForm({ node, busy, error, onSubmit, onCancel }: RenameForm
         value={name}
         onValueChange={setName}
         error={error ?? undefined}
+      />
+      <SpacePhotoControl
+        spaceId={node.space_id}
+        crewId={crewId}
+        imagePath={node.image_path ?? null}
+        onChange={onImageChange}
+        disabled={busy}
       />
       <div className="flex gap-2">
         <PrimaryButton type="submit" disabled={busy || !valid}>

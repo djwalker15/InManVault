@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Search, X } from 'lucide-react'
-import { CtaTray, PrimaryButton, TextButton } from '@/components/ds'
+import { CtaTray, PrimaryButton, ProductThumb, TextButton } from '@/components/ds'
 import { SpaceSelect } from '@/components/spaces/space-select'
 import { useSupabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
@@ -267,6 +267,7 @@ export function QuickAddForm({ crewId, userId, onSaved }: QuickAddFormProps) {
                   onClick={() => pick(p)}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition hover:bg-paper-200"
                 >
+                  <ProductThumb imageUrl={p.image_url} name={p.name} />
                   <span className="font-display text-sm font-bold text-ink-900">
                     {p.name}
                   </span>

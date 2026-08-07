@@ -74,6 +74,7 @@ erDiagram
         enum unit_type "premises|area|zone|section|sub_section|container|shelf"
         int parent_id FK "nullable, self-ref"
         string notes
+        string image_path "nullable, crew-media path"
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at "soft delete"

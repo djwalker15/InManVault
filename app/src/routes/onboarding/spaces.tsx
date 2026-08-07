@@ -21,7 +21,7 @@ import { PremisesForm } from '@/components/spaces/premises-form'
 import { TemplateBrowser } from '@/components/spaces/template-browser'
 import { Tree } from '@/components/spaces/tree'
 import { TreeEditor } from '@/components/spaces/tree-editor'
-import type { SpaceNode, UnitType } from '@/components/spaces/types'
+import { SPACE_COLUMNS, type SpaceNode, type UnitType } from '@/components/spaces/types'
 import { useActiveCrew } from '@/lib/active-crew'
 import { useRecentIds } from '@/lib/recent-ids'
 import { useSupabase } from '@/lib/supabase'
@@ -52,7 +52,7 @@ export default function OnboardingSpacesPage() {
     async function loadSpaces() {
       const { data, error: queryError } = await supabase
         .from('spaces')
-        .select('space_id, parent_id, unit_type, name, deleted_at')
+        .select(SPACE_COLUMNS)
         .eq('crew_id', crewId)
         .is('deleted_at', null)
         .order('created_at', { ascending: true })
@@ -76,7 +76,7 @@ export default function OnboardingSpacesPage() {
     if (!crewId) return
     const { data } = await supabase
       .from('spaces')
-      .select('space_id, parent_id, unit_type, name, deleted_at')
+      .select(SPACE_COLUMNS)
       .eq('crew_id', crewId)
       .is('deleted_at', null)
       .order('created_at', { ascending: true })
@@ -112,7 +112,7 @@ export default function OnboardingSpacesPage() {
           name,
           created_by: user.id,
         })
-        .select('space_id, parent_id, unit_type, name, deleted_at')
+        .select(SPACE_COLUMNS)
         .single()
       if (insertError) throw insertError
       if (!data) throw new Error('Premises insert returned no row')
@@ -205,9 +205,7 @@ export default function OnboardingSpacesPage() {
                       name: input.name,
                       created_by: user.id,
                     })
-                    .select(
-                      'space_id, parent_id, unit_type, name, deleted_at',
-                    )
+                    .select(SPACE_COLUMNS)
                     .single()
                   if (insertError) throw insertError
                   if (!data) throw new Error('Insert returned no row')
@@ -249,7 +247,15 @@ export default function OnboardingSpacesPage() {
             <div className="rounded-2xl bg-paper-100 p-4">
               <TreeEditor
                 nodes={nodes}
+                crewId={crewId ?? ''}
                 recentIds={recent.ids}
+                onImageChanged={(space_id, image_path) =>
+                  setNodes((prev) =>
+                    prev.map((n) =>
+                      n.space_id === space_id ? { ...n, image_path } : n,
+                    ),
+                  )
+                }
                 onAddChild={async (input) => {
                   if (!user || !crewId) throw new Error('Crew not loaded')
                   const { data, error: insertError } = await supabase
@@ -261,9 +267,7 @@ export default function OnboardingSpacesPage() {
                       name: input.name,
                       created_by: user.id,
                     })
-                    .select(
-                      'space_id, parent_id, unit_type, name, deleted_at',
-                    )
+                    .select(SPACE_COLUMNS)
                     .single()
                   if (insertError) throw insertError
                   if (!data) throw new Error('Insert returned no row')
@@ -283,9 +287,7 @@ export default function OnboardingSpacesPage() {
                       name: input.name,
                       created_by: user.id,
                     })
-                    .select(
-                      'space_id, parent_id, unit_type, name, deleted_at',
-                    )
+                    .select(SPACE_COLUMNS)
                     .single()
                   if (insertError) throw insertError
                   if (!data) throw new Error('Insert returned no row')

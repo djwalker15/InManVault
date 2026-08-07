@@ -8,11 +8,11 @@ The released build is being shared with clients, but there's no way to report a 
 
 ## Solution
 
-A **"Send feedback"** entry in the signed-in sidenav opens a bottom [[Sheet]] form. The client picks a **type** (bug / idea / question), writes a message, optionally attaches a **screenshot**, and optionally ticks an **"OK to follow up"** consent box. On submit:
+A **"Send feedback"** entry in the signed-in sidenav opens a bottom [[Sheet]] form. The client picks a **type** (bug / idea / question), writes a message, optionally attaches **screenshots** (up to 5, client-downscaled to 1500 px JPEG via the shared helper in `lib/downscale.ts`), and optionally ticks an **"OK to follow up"** consent box. On submit:
 
 1. Page **context** is captured silently (route, crew_id, user id, browser, viewport).
-2. Any screenshot is uploaded to the private `feedback-screenshots` storage bucket.
-3. The `submit-feedback` edge function persists a [[Feedback]] row and **auto-files a task into the ClickUp InMan → 📥 Inbox list**, reusing the existing issue-intake triage workflow.
+2. Screenshots are uploaded to the private `feedback-screenshots` storage bucket (user-prefix-scoped — feedback can be crew-less, so it deliberately does NOT use `crew-media`; see [[Media Storage]]).
+3. The `submit-feedback` edge function persists a [[Feedback]] row plus one `feedback_screenshots` child row per image (house child-table style, never `text[]`; the legacy `feedback.screenshot_path` column stays populated with the first screenshot for back-compat), and **auto-files a task into the ClickUp InMan → 📥 Inbox list** with a 7-day signed URL per screenshot.
 4. A success toast confirms; the row is kept even if the ClickUp call fails.
 
 ## Entities
@@ -21,7 +21,7 @@ A **"Send feedback"** entry in the signed-in sidenav opens a bottom [[Sheet]] fo
 
 ## Where it lives in code
 
-- **Migration:** `supabase/migrations/20260615000000_feedback_slice.sql` — `feedback_type` enum, `feedback` table + RLS, `feedback-screenshots` private bucket + owner-scoped object policies.
+- **Migration:** `supabase/migrations/20260615000000_feedback_slice.sql` — `feedback_type` enum, `feedback` table + RLS, `feedback-screenshots` private bucket + owner-scoped object policies. Multi-image child table: `20260807120200_feedback_screenshots_slice.sql` (`feedback_screenshots` + exists-join RLS + backfill).
 - **Edge function:** `supabase/functions/submit-feedback/index.ts` (`verify_jwt = false`, mirrors `delete-account`).
 - **Frontend:** `app/src/lib/feedback.ts`, `app/src/components/feedback/feedback-sheet.tsx`, wired through `signed-in-layout.tsx` + `sidenav-content.tsx`.
 

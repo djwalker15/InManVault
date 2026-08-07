@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { Chip } from '@/components/ds'
+import { Chip, ProductThumb } from '@/components/ds'
 import { SignedInLayout } from '@/components/signed-in/signed-in-layout'
 import { useCrewAlerts, type AlertRow } from '@/components/inventory/use-crew-alerts'
 import {
@@ -135,6 +135,10 @@ function AlertGroup({ alert, rows }: AlertGroupProps) {
             key={`${alert}-${row.inventoryItemId}`}
             className="flex items-start gap-2 rounded-lg bg-paper-50 p-3"
           >
+            <ProductThumb
+              imageUrl={row.productImageUrl}
+              name={row.productName}
+            />
             <div className="flex min-w-0 flex-1 flex-col">
               <p className="font-display text-sm font-bold text-ink-900">
                 {row.productName}

@@ -53,6 +53,8 @@ export interface ResolvedRow {
   productName: string | null
   productBrand: string | null
   productBarcode: string | null
+  /** Matched product's dual-mode image_url (null for new/unmatched rows). */
+  productImageUrl: string | null
   quantity: number | null
   unit: string
   currentSpaceId: string | null

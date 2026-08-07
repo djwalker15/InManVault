@@ -279,7 +279,7 @@ The Phase 4 tree editor (`tree-editor.tsx`) remains available under the **Tree**
 
 ### Future direction — visual / spatial navigation
 
-The aspirational endpoint (captured but out of scope) is **photo/video navigation**: a real photo or short video of the room as the map, where tapping a shelf/cabinet/fridge drills straight in. The crew-scoped media-storage pattern this needs is now designed — see [[Media Storage]]; space photos (a `spaces.image_path` column rendered in the drill-down cards, gradient placeholder as fallback) are the first step and are tracked in ClickUp. A second deferred idea is **per-user card richness** (photo vs. glyph cards; item counts and stock-health pills), already prototyped behind tweaks in the design handoff.
+The aspirational endpoint (captured but out of scope) is **photo/video navigation**: a real photo or short video of the room as the map, where tapping a shelf/cabinet/fridge drills straight in. The first step **shipped 2026-08**: `spaces.image_path` holds a crew-media photo (see [[Media Storage]]), set/replaced/removed from both rename surfaces (drill-down sheet + tree editor) and rendered as the drill-down card / scope-hero background, with the deterministic gradient placeholder as the fallback. One photo per space; photo-only (no icon picker). A second deferred idea is **per-user card richness** (photo vs. glyph cards; item counts and stock-health pills), already prototyped behind tweaks in the design handoff.
 
 ---
 

@@ -30,6 +30,8 @@ function makeMocks() {
     onRename: vi.fn(async () => {}),
     onReclassify: vi.fn(async () => {}),
     onDelete: vi.fn(async () => {}),
+    crewId: 'crew_abc',
+    onImageChanged: vi.fn(),
   }
 }
 

@@ -15,7 +15,7 @@ Optionally belongs to a [[ProductGroup]] (the generic concept — e.g., "Sugar")
 | `brand` | text | |
 | `variant` | text | Nullable, 1–80 chars. Free-text variant descriptor — flavor / scent / style ("Lime", "Zero Sugar Cherry"). Size is NOT a variant (it has its own columns below). Autocompletes from previously used values; no managed list. |
 | `barcode` | text | UPC/EAN |
-| `image_url` | text | |
+| `image_url` | text | **Dual-mode** (see [[Media Storage]]): full external `http(s)` URL (master catalog, server-written by the barcode-lookup pipeline) or bare `crew-media` storage path (crew uploads on crew-private products). `resolveImageSrc()` decides at render; crew paths are served via signed URLs. |
 | `default_category_id` | FK → [[Category]] | |
 | `size_value` | numeric | |
 | `size_unit` | text | |

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { CtaTray, Field, PrimaryButton, TextButton } from '@/components/ds'
+import { CtaTray, Field, PrimaryButton, ProductThumb, TextButton } from '@/components/ds'
 import { SpaceSelect } from '@/components/spaces/space-select'
 import { useSupabase } from '@/lib/supabase'
 import { formatSize } from './format'
@@ -135,22 +135,7 @@ export function InventoryForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <header className="flex items-start gap-3 rounded-2xl bg-paper-100 p-4">
-        <span
-          aria-hidden
-          className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-paper-50"
-        >
-          {product.image_url ? (
-            <img
-              src={product.image_url}
-              alt=""
-              className="size-full object-cover"
-            />
-          ) : (
-            <span className="font-display text-base font-bold text-ink-500">
-              {product.name.slice(0, 1).toUpperCase()}
-            </span>
-          )}
-        </span>
+        <ProductThumb imageUrl={product.image_url} name={product.name} />
         <div className="flex min-w-0 flex-col">
           <h2 className="font-display text-base font-bold text-ink-900">
             {product.name}

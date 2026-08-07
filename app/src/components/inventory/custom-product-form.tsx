@@ -1,6 +1,8 @@
 import { useEffect, useId, useState, type FormEvent } from 'react'
+import { ImagePlus, X } from 'lucide-react'
 import { CtaTray, Field, PrimaryButton, TextButton } from '@/components/ds'
 import { useSupabase } from '@/lib/supabase'
+import { deleteCrewImage, uploadCrewImage } from '@/lib/media'
 import { PRODUCT_COLUMNS, type ProductRow } from './types'
 import { useCrewBrands, useCrewVariants } from './use-crew-brands'
 
@@ -69,6 +71,7 @@ export function CustomProductForm({
   const [categoryId, setCategoryId] = useState<string>(
     initialProduct?.default_category_id ?? '',
   )
+  const [imageFile, setImageFile] = useState<File | null>(null)
   const [categories, setCategories] = useState<CategoryRow[]>([])
   const [units, setUnits] = useState<UnitRow[]>([])
   const [submitting, setSubmitting] = useState(false)
@@ -144,7 +147,32 @@ export function CustomProductForm({
         .single()
       if (insertError) throw insertError
       if (!data) throw new Error('Product insert returned no row')
-      onCreated(data as ProductRow)
+      let created = data as ProductRow
+      if (imageFile) {
+        // Image failure never rolls back the product — the letter
+        // fallback renders and the photo can be added from Edit.
+        try {
+          const path = await uploadCrewImage(
+            supabase,
+            crewId,
+            'products',
+            imageFile,
+            created.product_id,
+          )
+          const { error: imageError } = await supabase
+            .from('products')
+            .update({ image_url: path })
+            .eq('product_id', created.product_id)
+          if (imageError) {
+            void deleteCrewImage(supabase, path)
+            throw imageError
+          }
+          created = { ...created, image_url: path }
+        } catch (imageErr) {
+          console.warn('Product image upload failed', imageErr)
+        }
+      }
+      onCreated(created)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create product.')
     } finally {
@@ -265,6 +293,38 @@ export function CustomProductForm({
           ))}
         </select>
       </label>
+
+      <div className="flex flex-col gap-2">
+        <span className="font-display text-sm font-bold uppercase tracking-[0.35px] text-ink-900">
+          Photo <span className="font-body lowercase text-ink-500">(optional)</span>
+        </span>
+        {imageFile ? (
+          <div className="flex items-center justify-between rounded-xl bg-paper-100 px-4 py-3">
+            <span className="truncate font-body text-sm text-ink-700">
+              {imageFile.name}
+            </span>
+            <button
+              type="button"
+              aria-label="Remove photo"
+              onClick={() => setImageFile(null)}
+              className="ml-3 flex size-7 shrink-0 items-center justify-center rounded-full text-ink-600 transition hover:bg-paper-200"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        ) : (
+          <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-paper-100 px-4 py-3 font-body text-sm text-ink-600 transition hover:bg-paper-200">
+            <ImagePlus size={16} aria-hidden />
+            Add a photo
+            <input
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+            />
+          </label>
+        )}
+      </div>
 
       {error && (
         <p className="rounded-md bg-red-50 px-3 py-2 font-body text-sm text-red-700">

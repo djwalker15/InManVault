@@ -1,4 +1,4 @@
-import { Chip, CtaTray, PrimaryButton, TextButton } from '@/components/ds'
+import { Chip, CtaTray, PrimaryButton, ProductThumb, TextButton } from '@/components/ds'
 import type { ResolvedRow } from './types'
 
 interface PreviewStepProps {
@@ -38,7 +38,11 @@ export function PreviewStep({
             key={row.index}
             className="flex items-start justify-between gap-3 rounded-xl bg-paper-100 p-3"
           >
-            <div className="flex min-w-0 flex-col">
+            <ProductThumb
+              imageUrl={row.productImageUrl}
+              name={row.displayName}
+            />
+            <div className="flex min-w-0 flex-1 flex-col">
               <span className="font-display text-sm font-bold text-ink-900">
                 {row.displayName}
               </span>

@@ -49,8 +49,13 @@ interface RequestBody {
   contact_ok?: boolean
   context?: FeedbackContext | null
   crew_id?: string | null
+  /** Preferred: all screenshot paths, in pick order (capped server-side). */
+  screenshot_paths?: string[] | null
+  /** Legacy single-screenshot field — used when screenshot_paths is absent. */
   screenshot_path?: string | null
 }
+
+const MAX_SCREENSHOTS = 5
 
 const TYPE_LABEL: Record<FeedbackType, string> = {
   bug: 'Bug',
@@ -96,6 +101,13 @@ Deno.serve(async (req) => {
     )
   }
 
+  // Resolve screenshots: prefer the multi-image field, fall back to the
+  // legacy singular one (older clients mid-deploy). Capped defensively.
+  const screenshotPaths = (
+    body.screenshot_paths ??
+    (body.screenshot_path ? [body.screenshot_path] : [])
+  ).slice(0, MAX_SCREENSHOTS)
+
   // User-context client — forwards the Clerk JWT so RLS + the
   // submitted_by default identify the caller.
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -111,7 +123,10 @@ Deno.serve(async (req) => {
       message,
       contact_ok: body.contact_ok ?? false,
       context: body.context ?? null,
-      screenshot_path: body.screenshot_path ?? null,
+      // Legacy column stays populated with the first screenshot so
+      // existing readers keep working (deprecated; child table is
+      // canonical).
+      screenshot_path: screenshotPaths[0] ?? null,
     })
     .select('feedback_id, submitted_by')
     .single()
@@ -126,16 +141,34 @@ Deno.serve(async (req) => {
   const feedbackId = row.feedback_id as string
   const submittedBy = row.submitted_by as string
 
-  // File the ClickUp task. The admin client is used for the signed URL
+  // Only paths under the submitter's own prefix are recorded and signed —
+  // anything else would let a caller mint URLs for objects they don't own.
+  const ownedPaths = screenshotPaths.filter((p) =>
+    p.startsWith(`${submittedBy}/`),
+  )
+
+  // Child rows (canonical multi-image record). Non-fatal on error: the
+  // feedback row is already in, and the legacy column carries the first
+  // screenshot regardless.
+  if (ownedPaths.length > 0) {
+    const { error: screenshotsError } = await supabase
+      .from('feedback_screenshots')
+      .insert(ownedPaths.map((path) => ({ feedback_id: feedbackId, path })))
+    if (screenshotsError) {
+      console.error('feedback_screenshots insert failed', screenshotsError)
+    }
+  }
+
+  // File the ClickUp task. The admin client is used for the signed URLs
   // (the bucket is private) and to patch the row afterwards.
   const admin = createAdminClient()
 
-  let screenshotUrl: string | null = null
-  if (body.screenshot_path) {
+  const screenshotUrls: string[] = []
+  for (const path of ownedPaths) {
     const { data: signed } = await admin.storage
       .from(SCREENSHOT_BUCKET)
-      .createSignedUrl(body.screenshot_path, SIGNED_URL_TTL_SECONDS)
-    screenshotUrl = signed?.signedUrl ?? null
+      .createSignedUrl(path, SIGNED_URL_TTL_SECONDS)
+    if (signed?.signedUrl) screenshotUrls.push(signed.signedUrl)
   }
 
   let clickupTaskId: string | null = null
@@ -161,7 +194,11 @@ Deno.serve(async (req) => {
         ctx.user_agent ? `**Browser:** ${ctx.user_agent}` : null,
         ctx.app_version ? `**App version:** ${ctx.app_version}` : null,
         `**OK to follow up:** ${body.contact_ok ? 'Yes' : 'No'}`,
-        screenshotUrl ? `**Screenshot:** ${screenshotUrl}` : null,
+        ...screenshotUrls.map((url, i) =>
+          screenshotUrls.length === 1
+            ? `**Screenshot:** ${url}`
+            : `**Screenshot ${i + 1}:** ${url}`,
+        ),
         '',
         `_InMan feedback ${feedbackId}_`,
       ]

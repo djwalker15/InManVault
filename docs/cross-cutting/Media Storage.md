@@ -73,9 +73,9 @@ Naming convention elsewhere: [[WasteEvent]].`photo_url` holds a crew-media **pat
 
 | Consumer | Column | Status |
 |----------|--------|--------|
-| [[Product]] images | `products.image_url` (dual-mode) | Column shipped; upload UI tracked in ClickUp |
-| [[WasteEvent]] photos | `waste_events.photo_url` (path) | Column + `record_waste p_photo_url` shipped; capture UI tracked |
-| [[Space]] pictures | `spaces.image_path` (new) | Migration + UI tracked; gradient placeholder retained as fallback |
+| [[Product]] images | `products.image_url` (dual-mode) | **Shipped** — upload/replace/remove on crew-private products (create form + edit flow) |
+| [[WasteEvent]] photos | `waste_events.photo_url` (path) | **Shipped** — capture on the waste form; display waits for the waste-history page |
+| [[Space]] pictures | `spaces.image_path` | **Shipped** — upload/replace/remove on both rename surfaces; drill-down cards render the signed photo, gradient fallback retained |
 | [[Recipe]] / [[RecipeStep]] photos | `photo_url` (planned) | v1.2 — reuses this pattern as-is |
 | AI image resolver | reads/writes crew-media paths | Future — depends on this pattern |
 

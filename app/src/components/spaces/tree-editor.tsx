@@ -16,6 +16,7 @@ import {
   hasChildren,
   reclassifySuggestions,
 } from './tree-helpers'
+import { SpacePhotoControl } from './space-photo-control'
 import {
   UNIT_TYPE_GLYPH,
   UNIT_TYPE_LABEL,
@@ -25,6 +26,7 @@ import {
 
 interface TreeEditorProps {
   nodes: SpaceNode[]
+  crewId: string
   onAddChild: (input: {
     parent_id: string
     unit_type: UnitType
@@ -38,6 +40,8 @@ interface TreeEditorProps {
   onRename: (space_id: string, name: string) => Promise<void>
   onDelete: (space_ids: string[]) => Promise<void>
   onReclassify: (space_id: string, unit_type: UnitType) => Promise<void>
+  /** The photo control commits its own writes; hosts patch node state here. */
+  onImageChanged: (space_id: string, image_path: string | null) => void
   emptyState?: string
   /** Ids of just-created spaces — their rows flash and scroll into view. */
   recentIds?: ReadonlySet<string>
@@ -75,11 +79,13 @@ function buildIndex(nodes: SpaceNode[]): ChildrenIndex {
 
 export function TreeEditor({
   nodes,
+  crewId,
   onAddChild,
   onAddSibling,
   onRename,
   onDelete,
   onReclassify,
+  onImageChanged,
   emptyState,
   recentIds,
 }: TreeEditorProps) {
@@ -103,11 +109,13 @@ export function TreeEditor({
           depth={0}
           index={index}
           allNodes={nodes}
+          crewId={crewId}
           onAddChild={onAddChild}
           onAddSibling={onAddSibling}
           onRename={onRename}
           onDelete={onDelete}
           onReclassify={onReclassify}
+          onImageChanged={onImageChanged}
           recentIds={recentIds}
         />
       ))}
@@ -120,11 +128,13 @@ interface TreeRowProps {
   depth: number
   index: ChildrenIndex
   allNodes: SpaceNode[]
+  crewId: string
   onAddChild: TreeEditorProps['onAddChild']
   onAddSibling: TreeEditorProps['onAddSibling']
   onRename: TreeEditorProps['onRename']
   onDelete: TreeEditorProps['onDelete']
   onReclassify: TreeEditorProps['onReclassify']
+  onImageChanged: TreeEditorProps['onImageChanged']
   recentIds?: ReadonlySet<string>
 }
 
@@ -133,11 +143,13 @@ function TreeRow({
   depth,
   index,
   allNodes,
+  crewId,
   onAddChild,
   onAddSibling,
   onRename,
   onDelete,
   onReclassify,
+  onImageChanged,
   recentIds,
 }: TreeRowProps) {
   const children = index.childrenByParent.get(node.space_id) ?? []
@@ -290,6 +302,7 @@ function TreeRow({
       {action !== null && (
         <ActionPanel
           node={node}
+          crewId={crewId}
           depth={depth}
           action={action}
           allowedChildTypes={allowedChildTypes}
@@ -313,6 +326,7 @@ function TreeRow({
           onRename={handleRename}
           onDelete={handleDeleteConfirm}
           onReclassify={handleReclassify}
+          onImageChanged={onImageChanged}
           onCancel={closeAction}
           childCount={childCount}
         />
@@ -327,11 +341,13 @@ function TreeRow({
               depth={depth + 1}
               index={index}
               allNodes={allNodes}
+              crewId={crewId}
               onAddChild={onAddChild}
               onAddSibling={onAddSibling}
               onRename={onRename}
               onDelete={onDelete}
               onReclassify={onReclassify}
+              onImageChanged={onImageChanged}
               recentIds={recentIds}
             />
           ))}
@@ -343,6 +359,7 @@ function TreeRow({
 
 interface ActionPanelProps {
   node: SpaceNode
+  crewId: string
   depth: number
   action: Action
   allowedChildTypes: UnitType[]
@@ -360,11 +377,13 @@ interface ActionPanelProps {
   onRename: (name: string) => Promise<void>
   onDelete: () => Promise<void>
   onReclassify: (unit_type: UnitType) => Promise<void>
+  onImageChanged: TreeEditorProps['onImageChanged']
   onCancel: () => void
 }
 
 function ActionPanel({
   node,
+  crewId,
   depth,
   action,
   allowedChildTypes,
@@ -382,6 +401,7 @@ function ActionPanel({
   onRename,
   onDelete,
   onReclassify,
+  onImageChanged,
   onCancel,
 }: ActionPanelProps) {
   return (
@@ -459,10 +479,12 @@ function ActionPanel({
 
       {action === 'rename' && (
         <RenameForm
-          initial={node.name}
+          node={node}
+          crewId={crewId}
           busy={busy}
           error={error}
           onSubmit={onRename}
+          onImageChanged={onImageChanged}
           onCancel={onCancel}
         />
       )}
@@ -609,23 +631,27 @@ function NameInputForm({
 }
 
 interface RenameFormProps {
-  initial: string
+  node: SpaceNode
+  crewId: string
   busy: boolean
   error: string | null
   onSubmit: (name: string) => Promise<void>
+  onImageChanged: TreeEditorProps['onImageChanged']
   onCancel: () => void
 }
 
 function RenameForm({
-  initial,
+  node,
+  crewId,
   busy,
   error,
   onSubmit,
+  onImageChanged,
   onCancel,
 }: RenameFormProps) {
-  const [name, setName] = useState(initial)
+  const [name, setName] = useState(node.name)
   const trimmed = name.trim()
-  const valid = trimmed.length >= 1 && trimmed.length <= 64 && trimmed !== initial
+  const valid = trimmed.length >= 1 && trimmed.length <= 64 && trimmed !== node.name
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -645,6 +671,13 @@ function RenameForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         className="rounded-md bg-paper-50 px-2 py-1 font-body text-sm text-ink-900 outline-none focus:bg-paper-250"
+      />
+      <SpacePhotoControl
+        spaceId={node.space_id}
+        crewId={crewId}
+        imagePath={node.image_path ?? null}
+        onChange={(image_path) => onImageChanged(node.space_id, image_path)}
+        disabled={busy}
       />
       {error && <p className="font-body text-xs text-error">{error}</p>}
       <div className="flex flex-wrap gap-2">
