@@ -4,6 +4,7 @@
 // `submit-feedback` edge function — the token never reaches the browser.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { downscaleToBlob } from '@/lib/downscale'
 
 export type FeedbackType = 'bug' | 'idea' | 'question'
 
@@ -20,6 +21,13 @@ export interface SubmitFeedbackPayload {
   contact_ok: boolean
   context: FeedbackContext
   crew_id: string | null
+  /** All screenshots, in pick order. */
+  screenshot_paths: string[]
+  /**
+   * Legacy single-screenshot field — always mirrored to
+   * `screenshot_paths[0] ?? null` so an older edge function deployed
+   * mid-release still records the first screenshot.
+   */
   screenshot_path: string | null
 }
 
@@ -47,23 +55,21 @@ export function gatherContext(): FeedbackContext {
 }
 
 /**
- * Uploads an optional screenshot to the private feedback bucket, keyed
- * under the submitter's Clerk user id (`<userId>/<uuid>.<ext>`) to satisfy
- * the storage RLS prefix check. Returns the object path to persist on the
- * feedback row.
+ * Downscales (1500 px longest edge, JPEG) and uploads a screenshot to
+ * the private feedback bucket, keyed under the submitter's Clerk user id
+ * (`<userId>/<uuid>.jpg`) to satisfy the storage RLS prefix check.
+ * Returns the object path to persist on the feedback row.
  */
 export async function uploadFeedbackScreenshot(
   supabase: SupabaseClient,
   userId: string,
   file: File,
 ): Promise<string> {
-  const ext = file.name.includes('.')
-    ? file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase()
-    : 'png'
-  const path = `${userId}/${crypto.randomUUID()}.${ext}`
+  const blob = await downscaleToBlob(file)
+  const path = `${userId}/${crypto.randomUUID()}.jpg`
   const { error } = await supabase.storage
     .from(SCREENSHOT_BUCKET)
-    .upload(path, file, { contentType: file.type || 'image/png' })
+    .upload(path, blob, { contentType: 'image/jpeg' })
   if (error) throw error
   return path
 }

@@ -105,6 +105,7 @@ describe('FeedbackSheet', () => {
       contact_ok: true,
       context: expect.objectContaining({ route: '/inventory' }),
       crew_id: 'crew_1',
+      screenshot_paths: [],
       screenshot_path: null,
     })
   })
@@ -115,7 +116,7 @@ describe('FeedbackSheet', () => {
       target: { value: 'Visual glitch' },
     })
     const file = new File(['x'], 'bug.png', { type: 'image/png' })
-    fireEvent.change(screen.getByLabelText(/attach an image/i), {
+    fireEvent.change(screen.getByLabelText(/attach images/i), {
       target: { files: [file] },
     })
     fireEvent.click(screen.getByRole('button', { name: /send feedback/i }))
@@ -129,7 +130,65 @@ describe('FeedbackSheet', () => {
     )
     expect(submitFeedback).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ screenshot_path: 'user_1/shot.png' }),
+      expect.objectContaining({
+        screenshot_paths: ['user_1/shot.png'],
+        screenshot_path: 'user_1/shot.png',
+      }),
+    )
+  })
+
+  it('uploads every attached screenshot and sends all their paths', async () => {
+    uploadFeedbackScreenshot
+      .mockResolvedValueOnce('user_1/a.jpg')
+      .mockResolvedValueOnce('user_1/b.jpg')
+    renderSheet()
+    fireEvent.change(screen.getByLabelText(/message/i), {
+      target: { value: 'Two shots' },
+    })
+    const fileA = new File(['a'], 'a.png', { type: 'image/png' })
+    const fileB = new File(['b'], 'b.png', { type: 'image/png' })
+    fireEvent.change(screen.getByLabelText(/attach images/i), {
+      target: { files: [fileA, fileB] },
+    })
+    expect(screen.getByText('a.png')).toBeInTheDocument()
+    expect(screen.getByText('b.png')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /send feedback/i }))
+
+    await waitFor(() => {
+      expect(submitFeedback).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          screenshot_paths: ['user_1/a.jpg', 'user_1/b.jpg'],
+          screenshot_path: 'user_1/a.jpg',
+        }),
+      )
+    })
+    expect(uploadFeedbackScreenshot).toHaveBeenCalledTimes(2)
+  })
+
+  it('removes an individual screenshot chip before submitting', async () => {
+    renderSheet()
+    fireEvent.change(screen.getByLabelText(/message/i), {
+      target: { value: 'One survives' },
+    })
+    const fileA = new File(['a'], 'a.png', { type: 'image/png' })
+    const fileB = new File(['b'], 'b.png', { type: 'image/png' })
+    fireEvent.change(screen.getByLabelText(/attach images/i), {
+      target: { files: [fileA, fileB] },
+    })
+    fireEvent.click(
+      screen.getByRole('button', { name: /remove screenshot a\.png/i }),
+    )
+    expect(screen.queryByText('a.png')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /send feedback/i }))
+
+    await waitFor(() =>
+      expect(uploadFeedbackScreenshot).toHaveBeenCalledTimes(1),
+    )
+    expect(uploadFeedbackScreenshot).toHaveBeenCalledWith(
+      expect.anything(),
+      'user_1',
+      fileB,
     )
   })
 
