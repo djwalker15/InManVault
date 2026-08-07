@@ -4,6 +4,7 @@ import {
   Archive,
   Edit3,
   Home,
+  ImagePlus,
   MoveRight,
   PackageOpen,
   RotateCcw,
@@ -11,13 +12,20 @@ import {
   SlidersHorizontal,
   Trash2,
   Utensils,
+  X,
 } from 'lucide-react'
 import {
   CtaTray,
   Field,
   PrimaryButton,
+  ProductThumb,
   TextButton,
 } from '@/components/ds'
+import {
+  deleteCrewImage,
+  resolveImageSrc,
+  uploadCrewImage,
+} from '@/lib/media'
 import { SpaceSelect } from '@/components/spaces/space-select'
 import { useSupabase } from '@/lib/supabase'
 import { buildUnitMap, convertQuantity } from '@/lib/units'
@@ -44,6 +52,8 @@ interface RowActionsProps {
   productBrand: string | null
   /** The product's crew (null = master catalog). Gates name/brand editing. */
   productCrewId: string | null
+  /** Dual-mode products.image_url — powers the Edit form's photo controls. */
+  productImageUrl: string | null
   currentSpaceId: string
   homeSpaceId: string | null
   unit: string
@@ -82,6 +92,7 @@ export function RowActions({
   productName,
   productBrand,
   productCrewId,
+  productImageUrl,
   currentSpaceId,
   homeSpaceId,
   unit,
@@ -342,11 +353,13 @@ export function RowActions({
 
       {action === 'edit' && (
         <EditForm
+          crewId={crewId}
           inventoryItemId={inventoryItemId}
           productId={productId}
           productName={productName}
           productBrand={productBrand}
           productCrewId={productCrewId}
+          productImageUrl={productImageUrl}
           unit={unit}
           quantity={quantity}
           category_id={category_id}
@@ -641,11 +654,13 @@ function RemoveForm({
 }
 
 interface EditFormProps {
+  crewId: string
   inventoryItemId: string
   productId: string
   productName: string
   productBrand: string | null
   productCrewId: string | null
+  productImageUrl: string | null
   unit: string
   quantity: number
   category_id: string | null
@@ -662,11 +677,13 @@ interface EditFormProps {
 }
 
 function EditForm({
+  crewId,
   inventoryItemId,
   productId,
   productName,
   productBrand,
   productCrewId,
+  productImageUrl,
   unit,
   quantity,
   category_id,
@@ -694,6 +711,8 @@ function EditForm({
   const isCrewProduct = productCrewId !== null
   const [nameText, setNameText] = useState(productName)
   const [brandText, setBrandText] = useState(productBrand ?? '')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [removeImage, setRemoveImage] = useState(false)
 
   // Only units in the SAME category as the current unit are offered — the
   // DB blocks cross-category conversion, and so does convertQuantity().
@@ -767,6 +786,40 @@ function EditForm({
           .eq('product_id', productId)
         if (productError) throw productError
       }
+
+      // Photo set / replace / remove — crew-private products only.
+      // Objects are immutable: replace = upload new + best-effort delete
+      // of the old one (a failed delete is an accepted, warned orphan).
+      // External http(s) image_url values are never storage objects, so
+      // they are never deleted.
+      const oldIsPath =
+        productImageUrl !== null &&
+        resolveImageSrc(productImageUrl)?.kind === 'path'
+      if (isCrewProduct && imageFile) {
+        const path = await uploadCrewImage(
+          supabase,
+          crewId,
+          'products',
+          imageFile,
+          productId,
+        )
+        const { error: imageError } = await supabase
+          .from('products')
+          .update({ image_url: path })
+          .eq('product_id', productId)
+        if (imageError) {
+          void deleteCrewImage(supabase, path)
+          throw imageError
+        }
+        if (oldIsPath) void deleteCrewImage(supabase, productImageUrl)
+      } else if (isCrewProduct && removeImage && productImageUrl !== null) {
+        const { error: imageError } = await supabase
+          .from('products')
+          .update({ image_url: null })
+          .eq('product_id', productId)
+        if (imageError) throw imageError
+        if (oldIsPath) void deleteCrewImage(supabase, productImageUrl)
+      }
       onSaved()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save.')
@@ -798,6 +851,59 @@ function EditForm({
             value={brandText}
             onValueChange={setBrandText}
           />
+          <div className="flex flex-col gap-2">
+            <span className="font-display text-sm font-bold uppercase tracking-[0.35px] text-ink-900">
+              Photo <span className="font-body lowercase text-ink-500">(optional)</span>
+            </span>
+            <div className="flex items-center gap-3">
+              <ProductThumb
+                imageUrl={removeImage ? null : productImageUrl}
+                name={productName}
+              />
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                {imageFile ? (
+                  <div className="flex items-center justify-between rounded-xl bg-paper-100 px-3 py-2">
+                    <span className="truncate font-body text-sm text-ink-700">
+                      {imageFile.name}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="Clear selected photo"
+                      onClick={() => setImageFile(null)}
+                      className="ml-3 flex size-7 shrink-0 items-center justify-center rounded-full text-ink-600 transition hover:bg-paper-200"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-paper-100 px-3 py-2 font-body text-sm text-ink-600 transition hover:bg-paper-200">
+                    <ImagePlus size={16} aria-hidden />
+                    {productImageUrl !== null && !removeImage
+                      ? 'Replace photo'
+                      : 'Add a photo'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        setImageFile(e.target.files?.[0] ?? null)
+                        setRemoveImage(false)
+                      }}
+                    />
+                  </label>
+                )}
+                {productImageUrl !== null && !imageFile && (
+                  <button
+                    type="button"
+                    onClick={() => setRemoveImage(!removeImage)}
+                    className="self-start font-body text-xs text-ink-500 underline"
+                  >
+                    {removeImage ? 'Keep current photo' : 'Remove photo'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </>
       )}
       <label className="flex flex-col gap-2">

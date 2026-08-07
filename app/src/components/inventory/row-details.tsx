@@ -231,6 +231,7 @@ export function InventoryRowDetails(props: InventoryRowDetailsProps) {
           productName={props.productName}
           productBrand={props.productBrand}
           productCrewId={props.productCrewId ?? null}
+          productImageUrl={props.productImageUrl}
           currentSpaceId={props.currentSpaceId}
           homeSpaceId={props.homeSpaceId ?? null}
           unit={props.unit}

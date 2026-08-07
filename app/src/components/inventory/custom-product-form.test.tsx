@@ -1,8 +1,16 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { mockClerk } from '@/test/clerk-mock'
 import { makeSupabaseMock } from '@/test/supabase-mock'
+import * as mediaLib from '@/lib/media'
 import { CustomProductForm } from './custom-product-form'
+
+vi.mock('@/lib/media', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/media')>()
+  return { ...actual, uploadCrewImage: vi.fn(), deleteCrewImage: vi.fn() }
+})
+
+const uploadCrewImage = vi.mocked(mediaLib.uploadCrewImage)
 
 /**
  * Brands as the crew sees them: master-catalog rows, the crew's own rows, a
@@ -377,5 +385,113 @@ describe('CustomProductForm — Field focus styling', () => {
     expect(shell.className).toContain('border-sage-700')
     fireEvent.blur(input)
     expect(shell.className).toContain('border-transparent')
+  })
+})
+
+describe('CustomProductForm — photo upload', () => {
+  const createdRow = {
+    product_id: 'prod_9',
+    crew_id: 'crew_abc',
+    name: 'Ghost Pepper Jam',
+    brand: null,
+    variant: null,
+    barcode: null,
+    image_url: null,
+    size_value: null,
+    size_unit: null,
+    default_category_id: null,
+  }
+  const photoFile = new File(['img'], 'jam.jpg', { type: 'image/jpeg' })
+
+  function mockCreate() {
+    mockClerk({ user: { id: 'user_1' } })
+    return makeSupabaseMock({
+      products: {
+        select: { data: [], error: null },
+        single: { data: createdRow, error: null },
+        update: { data: null, error: null },
+      },
+    })
+  }
+
+  async function fillAndSubmit() {
+    fireEvent.change(screen.getByLabelText(/product name/i), {
+      target: { value: 'Ghost Pepper Jam' },
+    })
+    fireEvent.change(screen.getByLabelText(/add a photo/i), {
+      target: { files: [photoFile] },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /create product/i }))
+  }
+
+  it('uploads the photo after insert and reports the path on the created row', async () => {
+    const sb = mockCreate()
+    uploadCrewImage.mockResolvedValue('crew_abc/products/prod_9/img.jpg')
+    const onCreated = vi.fn()
+    render(
+      <CustomProductForm
+        crewId="crew_abc"
+        userId="user_1"
+        onCreated={onCreated}
+        onCancel={() => {}}
+      />,
+    )
+    await fillAndSubmit()
+    await waitFor(() => {
+      expect(onCreated).toHaveBeenCalledWith({
+        ...createdRow,
+        image_url: 'crew_abc/products/prod_9/img.jpg',
+      })
+    })
+    expect(uploadCrewImage).toHaveBeenCalledWith(
+      expect.anything(),
+      'crew_abc',
+      'products',
+      photoFile,
+      'prod_9',
+    )
+    expect(sb.tables.products.update).toHaveBeenCalledWith({
+      image_url: 'crew_abc/products/prod_9/img.jpg',
+    })
+  })
+
+  it('still creates the product when the upload fails', async () => {
+    mockCreate()
+    uploadCrewImage.mockRejectedValue(new Error('storage down'))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const onCreated = vi.fn()
+    render(
+      <CustomProductForm
+        crewId="crew_abc"
+        userId="user_1"
+        onCreated={onCreated}
+        onCancel={() => {}}
+      />,
+    )
+    await fillAndSubmit()
+    await waitFor(() => {
+      expect(onCreated).toHaveBeenCalledWith(createdRow)
+    })
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('lets the user clear a chosen photo before submitting', async () => {
+    mockCreate()
+    render(
+      <CustomProductForm
+        crewId="crew_abc"
+        userId="user_1"
+        onCreated={() => {}}
+        onCancel={() => {}}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText(/add a photo/i), {
+      target: { files: [photoFile] },
+    })
+    expect(screen.getByText('jam.jpg')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /remove photo/i }))
+    expect(screen.queryByText('jam.jpg')).toBeNull()
+    expect(screen.getByText(/add a photo/i)).toBeInTheDocument()
   })
 })

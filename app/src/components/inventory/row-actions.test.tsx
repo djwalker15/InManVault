@@ -3,7 +3,21 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { mockClerk } from '@/test/clerk-mock'
 import { makeSupabaseMock } from '@/test/supabase-mock'
+import * as mediaLib from '@/lib/media'
 import { RowActions } from './row-actions'
+
+vi.mock('@/lib/media', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/media')>()
+  return {
+    ...actual,
+    uploadCrewImage: vi.fn(),
+    deleteCrewImage: vi.fn(),
+    useSignedUrl: vi.fn(() => null),
+  }
+})
+
+const uploadCrewImage = vi.mocked(mediaLib.uploadCrewImage)
+const deleteCrewImage = vi.mocked(mediaLib.deleteCrewImage)
 
 /** RowActions calls useNavigate(), so it must render inside a Router. */
 function renderRA(ui: React.ReactElement) {
@@ -30,6 +44,7 @@ const baseProps = {
   productName: 'Tomato Paste',
   productBrand: null as string | null,
   productCrewId: null as string | null,
+  productImageUrl: null as string | null,
   currentSpaceId: 's_a',
   homeSpaceId: null as string | null,
   unit: 'count',
@@ -434,5 +449,132 @@ describe('RowActions', () => {
     ).toBeInTheDocument()
     rerender(<RowActions {...baseProps} isPackage quantity={0} />)
     expect(screen.getByRole('button', { name: /^open$/i })).toBeDisabled()
+  })
+})
+
+describe('RowActions — Edit form photo controls', () => {
+  const crewProps = {
+    ...baseProps,
+    productCrewId: 'crew_abc',
+    productName: 'Hot Sauce',
+  }
+  const photoFile = new File(['img'], 'sauce.jpg', { type: 'image/jpeg' })
+
+  function openEdit() {
+    fireEvent.click(screen.getByRole('button', { name: /^edit$/i }))
+  }
+
+  it('uploads a new photo and stores its path on save', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    const sb = makeSupabaseMock({
+      spaces: { select: { data: sampleSpaces, error: null } },
+      products: { update: { data: null, error: null } },
+    })
+    uploadCrewImage.mockResolvedValue('crew_abc/products/prod_1/new.jpg')
+    renderRA(<RowActions {...crewProps} />)
+    openEdit()
+    fireEvent.change(screen.getByLabelText(/add a photo/i), {
+      target: { files: [photoFile] },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    await waitFor(() => {
+      expect(sb.tables.products.update).toHaveBeenCalledWith({
+        image_url: 'crew_abc/products/prod_1/new.jpg',
+      })
+    })
+    expect(uploadCrewImage).toHaveBeenCalledWith(
+      expect.anything(),
+      'crew_abc',
+      'products',
+      photoFile,
+      'prod_1',
+    )
+    expect(deleteCrewImage).not.toHaveBeenCalled()
+  })
+
+  it('replace deletes the old storage object after the row is updated', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    makeSupabaseMock({
+      spaces: { select: { data: sampleSpaces, error: null } },
+      products: { update: { data: null, error: null } },
+    })
+    uploadCrewImage.mockResolvedValue('crew_abc/products/prod_1/new.jpg')
+    renderRA(
+      <RowActions
+        {...crewProps}
+        productImageUrl="crew_abc/products/prod_1/old.jpg"
+      />,
+    )
+    openEdit()
+    fireEvent.change(screen.getByLabelText(/replace photo/i), {
+      target: { files: [photoFile] },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    await waitFor(() => {
+      expect(deleteCrewImage).toHaveBeenCalledWith(
+        expect.anything(),
+        'crew_abc/products/prod_1/old.jpg',
+      )
+    })
+  })
+
+  it('never deletes an external http(s) image_url on replace', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    const sb = makeSupabaseMock({
+      spaces: { select: { data: sampleSpaces, error: null } },
+      products: { update: { data: null, error: null } },
+    })
+    uploadCrewImage.mockResolvedValue('crew_abc/products/prod_1/new.jpg')
+    renderRA(
+      <RowActions
+        {...crewProps}
+        productImageUrl="https://cdn.example.com/catalog.jpg"
+      />,
+    )
+    openEdit()
+    fireEvent.change(screen.getByLabelText(/replace photo/i), {
+      target: { files: [photoFile] },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    await waitFor(() => {
+      expect(sb.tables.products.update).toHaveBeenCalled()
+    })
+    expect(deleteCrewImage).not.toHaveBeenCalled()
+  })
+
+  it('remove nulls the column and deletes the object', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    const sb = makeSupabaseMock({
+      spaces: { select: { data: sampleSpaces, error: null } },
+      products: { update: { data: null, error: null } },
+    })
+    renderRA(
+      <RowActions
+        {...crewProps}
+        productImageUrl="crew_abc/products/prod_1/old.jpg"
+      />,
+    )
+    openEdit()
+    fireEvent.click(screen.getByRole('button', { name: /remove photo/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    await waitFor(() => {
+      expect(sb.tables.products.update).toHaveBeenCalledWith({
+        image_url: null,
+      })
+    })
+    expect(deleteCrewImage).toHaveBeenCalledWith(
+      expect.anything(),
+      'crew_abc/products/prod_1/old.jpg',
+    )
+    expect(uploadCrewImage).not.toHaveBeenCalled()
+  })
+
+  it('shows no photo controls for master-catalog products', () => {
+    mockClerk({ user: { id: 'user_1' } })
+    makeSupabaseMock({ spaces: { select: { data: sampleSpaces, error: null } } })
+    renderRA(<RowActions {...baseProps} productCrewId={null} />)
+    openEdit()
+    expect(screen.queryByText(/add a photo/i)).toBeNull()
+    expect(screen.queryByText(/photo/i)).toBeNull()
   })
 })
