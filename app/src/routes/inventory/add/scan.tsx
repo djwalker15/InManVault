@@ -3,6 +3,7 @@ import { useUser } from '@clerk/clerk-react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check } from 'lucide-react'
 import { SignedInLayout } from '@/components/signed-in/signed-in-layout'
+import { ProductThumb } from '@/components/ds'
 import {
   AddItemForms,
   type AddPhase,
@@ -271,10 +272,23 @@ function ExistingChooser({
             key={row.item.inventory_item_id}
             className="flex items-center justify-between gap-3 rounded-xl bg-paper-100 p-3"
           >
-            <span className="font-body text-xs text-ink-600">
-              {row.item.quantity} {row.item.unit} ·{' '}
-              {row.locationPath || 'No location'}
-            </span>
+            <div className="flex min-w-0 items-center gap-3">
+              <ProductThumb imageUrl={product.image_url} name={product.name} />
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate font-display text-sm font-bold text-ink-900">
+                  {product.name}
+                  {product.brand && (
+                    <span className="ml-1 font-body text-xs font-normal text-ink-600">
+                      · {product.brand}
+                    </span>
+                  )}
+                </span>
+                <span className="font-body text-xs text-ink-600">
+                  {row.item.quantity} {row.item.unit} ·{' '}
+                  {row.locationPath || 'No location'}
+                </span>
+              </div>
+            </div>
             <button
               type="button"
               onClick={() => onRestock(row)}

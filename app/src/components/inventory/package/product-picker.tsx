@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Search, X } from 'lucide-react'
+import { ProductThumb } from '@/components/ds'
 import { useSupabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 
@@ -7,6 +8,7 @@ export interface PickedProduct {
   product_id: string
   name: string
   brand: string | null
+  image_url: string | null
 }
 
 interface ProductPickerProps {
@@ -55,7 +57,7 @@ export function ProductPicker({
       const escaped = `%${escapeIlike(debounced)}%`
       const { data } = await supabase
         .from('products')
-        .select('product_id, name, brand')
+        .select('product_id, name, brand, image_url')
         .is('deleted_at', null)
         .or(`name.ilike.${escaped},brand.ilike.${escaped}`)
         .limit(12)
@@ -131,16 +133,19 @@ export function ProductPicker({
                       onChange(p)
                       setQuery('')
                     }}
-                    className="flex w-full flex-col items-start px-3 py-2 text-left transition hover:bg-paper-150"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left transition hover:bg-paper-150"
                   >
-                    <span className="font-body text-sm text-ink-900">
-                      {p.name}
-                    </span>
-                    {p.brand && (
-                      <span className="font-body text-xs text-ink-500">
-                        {p.brand}
+                    <ProductThumb imageUrl={p.image_url} name={p.name} />
+                    <span className="flex min-w-0 flex-col">
+                      <span className="font-body text-sm text-ink-900">
+                        {p.name}
                       </span>
-                    )}
+                      {p.brand && (
+                        <span className="font-body text-xs text-ink-500">
+                          {p.brand}
+                        </span>
+                      )}
+                    </span>
                   </button>
                 </li>
               ))}

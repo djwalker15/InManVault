@@ -10,7 +10,7 @@ function row(
   return {
     key,
     product: productId
-      ? { product_id: productId, name: productId, brand: null }
+      ? { product_id: productId, name: productId, brand: null, image_url: null }
       : null,
     quantity,
     unit,

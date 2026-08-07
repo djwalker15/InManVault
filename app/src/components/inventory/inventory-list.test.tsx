@@ -9,6 +9,7 @@ import {
 import { MemoryRouter } from 'react-router-dom'
 import { mockClerk } from '@/test/clerk-mock'
 import { makeSupabaseMock } from '@/test/supabase-mock'
+import { __resetMediaCache } from '@/lib/media'
 import { InventoryList } from './inventory-list'
 
 // Expanding a row renders RowActions, which calls useNavigate(), so every
@@ -245,5 +246,46 @@ describe('InventoryList', () => {
     await waitFor(() => {
       expect(screen.getByText('RLS blocked')).toBeInTheDocument()
     })
+  })
+
+  it('mints all row thumbnails through one batched createSignedUrls call', async () => {
+    // Uses the REAL media lib against the storage mock — the point is the
+    // batching contract: 30 visible thumbnails = one storage round-trip.
+    __resetMediaCache()
+    mockClerk({ user: { id: 'user_1' } })
+    const manyItems = Array.from({ length: 30 }, (_, i) => ({
+      inventory_item_id: `i_${i}`,
+      product_id: `p_${i}`,
+      current_space_id: 's_a',
+      home_space_id: 's_a',
+      quantity: 5,
+      unit: 'count',
+      category_id: null,
+      min_stock: null,
+      expiry_date: null,
+    }))
+    const manyProducts = Array.from({ length: 30 }, (_, i) => ({
+      product_id: `p_${i}`,
+      name: `Product ${i}`,
+      brand: null,
+      image_url: `crew_abc/products/p_${i}/img.jpg`,
+      default_category_id: null,
+    }))
+    const sb = makeSupabaseMock({
+      inventory_items: { select: { data: manyItems, error: null } },
+      products: { select: { data: manyProducts, error: null } },
+      categories: { select: { data: categories, error: null } },
+      spaces: { select: { data: spaces, error: null } },
+    })
+    render(<InventoryList crewId="crew_abc" />)
+    await waitFor(() => {
+      expect(
+        sb.storage.buckets['crew-media']?.createSignedUrls,
+      ).toHaveBeenCalledTimes(1)
+    })
+    const [paths, ttl] =
+      sb.storage.buckets['crew-media'].createSignedUrls.mock.calls[0]
+    expect(paths).toHaveLength(30)
+    expect(ttl).toBe(3600)
   })
 })

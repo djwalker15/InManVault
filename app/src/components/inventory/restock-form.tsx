@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { CtaTray, Field, PrimaryButton, TextButton } from '@/components/ds'
+import { CtaTray, Field, PrimaryButton, ProductThumb, TextButton } from '@/components/ds'
 import { useSupabase } from '@/lib/supabase'
 import { formatSize } from './format'
 import type { ExistingItemRow } from './types'
@@ -54,33 +54,36 @@ export function RestockForm({ row, onSaved, onCancel }: RestockFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <header className="flex flex-col gap-2 rounded-2xl bg-paper-100 p-4">
-        <p className="font-display text-[11px] font-bold uppercase tracking-[0.55px] text-sage-700">
-          Restock
-        </p>
-        <h2 className="font-display text-base font-bold text-ink-900">
-          {row.product.name}
-          {(() => {
-            const meta = [
-              row.product.brand,
-              row.product.variant,
-              formatSize(row.product.size_value, row.product.size_unit),
-            ]
-              .filter(Boolean)
-              .join(' · ')
-            return meta ? (
-              <span className="ml-1 font-body text-sm font-normal text-ink-600">
-                ({meta})
-              </span>
-            ) : null
-          })()}
-        </h2>
-        <p className="font-body text-sm leading-5 text-ink-700">
-          Currently <strong>{row.item.quantity} {row.item.unit}</strong> at{' '}
-          {row.locationPath || 'no location'}. Adding more here keeps the same
-          location and unit — pick "Add another" instead if you need a new
-          location.
-        </p>
+      <header className="flex items-start gap-3 rounded-2xl bg-paper-100 p-4">
+        <ProductThumb imageUrl={row.product.image_url} name={row.product.name} />
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <p className="font-display text-[11px] font-bold uppercase tracking-[0.55px] text-sage-700">
+            Restock
+          </p>
+          <h2 className="font-display text-base font-bold text-ink-900">
+            {row.product.name}
+            {(() => {
+              const meta = [
+                row.product.brand,
+                row.product.variant,
+                formatSize(row.product.size_value, row.product.size_unit),
+              ]
+                .filter(Boolean)
+                .join(' · ')
+              return meta ? (
+                <span className="ml-1 font-body text-sm font-normal text-ink-600">
+                  ({meta})
+                </span>
+              ) : null
+            })()}
+          </h2>
+          <p className="font-body text-sm leading-5 text-ink-700">
+            Currently <strong>{row.item.quantity} {row.item.unit}</strong> at{' '}
+            {row.locationPath || 'no location'}. Adding more here keeps the same
+            location and unit — pick "Add another" instead if you need a new
+            location.
+          </p>
+        </div>
       </header>
 
       <fieldset className="flex flex-col gap-2">

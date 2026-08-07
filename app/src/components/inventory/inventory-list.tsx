@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Chip } from '@/components/ds'
+import { Chip, ProductThumb } from '@/components/ds'
 import { useSupabase } from '@/lib/supabase'
 import { InventoryFilters } from './inventory-filters'
 import {
@@ -462,6 +462,7 @@ function InventoryRow({ row, expanded, onToggle }: InventoryRowProps) {
       className="flex w-full items-start gap-3 rounded-2xl bg-paper-50 p-4 text-left shadow-ambient-sm transition hover:bg-paper-100 active:scale-[0.998]"
       data-alert-score={row.score}
     >
+      <ProductThumb imageUrl={product.image_url} name={product.name} />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <h3 className="font-display text-base font-bold text-ink-900">
           {product.name}

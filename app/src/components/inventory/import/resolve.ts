@@ -118,22 +118,26 @@ export function resolveRows(input: ResolveInput): ResolvedRow[] {
     let productId: string | null = null
     let productResolution: ResolvedRow['productResolution'] = 'new'
     let matchedName: string | null = null
+    let matchedImageUrl: string | null = null
 
     const barcodeMatch = barcode ? productByBarcode.get(barcode) : undefined
     if (barcodeMatch) {
       productId = barcodeMatch.product_id
       matchedName = barcodeMatch.name
+      matchedImageUrl = barcodeMatch.image_url
       productResolution = 'matched'
     } else if (name) {
       const byName = productsByName.get(norm(name)) ?? []
       if (byName.length === 1) {
         productId = byName[0].product_id
         matchedName = byName[0].name
+        matchedImageUrl = byName[0].image_url
         productResolution = 'matched'
       } else if (byName.length > 1) {
         // Pick the first but flag it for the user.
         productId = byName[0].product_id
         matchedName = byName[0].name
+        matchedImageUrl = byName[0].image_url
         productResolution = 'ambiguous'
       } else {
         productResolution = 'new'
@@ -185,6 +189,7 @@ export function resolveRows(input: ResolveInput): ResolvedRow[] {
       productName: productId ? null : name || null,
       productBrand: productId ? null : brand || null,
       productBarcode: productId ? null : barcode || null,
+      productImageUrl: matchedImageUrl,
       quantity,
       unit,
       currentSpaceId,
