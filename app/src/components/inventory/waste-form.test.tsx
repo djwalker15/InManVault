@@ -2,9 +2,18 @@ import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { mockClerk } from '@/test/clerk-mock'
 import { makeSupabaseMock } from '@/test/supabase-mock'
+import * as mediaLib from '@/lib/media'
 import { WasteForm } from './waste-form'
 
+vi.mock('@/lib/media', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/media')>()
+  return { ...actual, uploadCrewImage: vi.fn() }
+})
+
+const uploadCrewImage = vi.mocked(mediaLib.uploadCrewImage)
+
 const baseProps = {
+  crewId: 'crew_abc',
   inventoryItemId: 'item_1',
   unit: 'count',
   quantity: 6,
@@ -13,6 +22,7 @@ const baseProps = {
   busy: false,
   setBusy: () => {},
   setError: () => {},
+  onNotice: () => {},
   onCancel: () => {},
   onSaved: () => {},
 }
@@ -138,5 +148,62 @@ describe('WasteForm', () => {
       'Cannot waste more than the 6 count on hand',
     )
     expect(onSaved).not.toHaveBeenCalled()
+  })
+
+  it('uploads the photo first and passes its path as p_photo_url', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    const sb = makeSupabaseMock({}, { record_waste: { data: 'flow_1', error: null } })
+    uploadCrewImage.mockResolvedValue('crew_abc/waste/photo.jpg')
+    const onSaved = vi.fn()
+    render(<WasteForm {...baseProps} onSaved={onSaved} />)
+    fireEvent.change(screen.getByLabelText(/expiry date/i), {
+      target: { value: '2026-08-01' },
+    })
+    const photo = new File(['img'], 'moldy.jpg', { type: 'image/jpeg' })
+    fireEvent.change(screen.getByLabelText(/add a photo/i), {
+      target: { files: [photo] },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /log waste/i }))
+    await waitFor(() => {
+      expect(sb.rpc).toHaveBeenCalledWith(
+        'record_waste',
+        expect.objectContaining({ p_photo_url: 'crew_abc/waste/photo.jpg' }),
+      )
+    })
+    expect(uploadCrewImage).toHaveBeenCalledWith(
+      expect.anything(),
+      'crew_abc',
+      'waste',
+      photo,
+    )
+    expect(onSaved).toHaveBeenCalled()
+  })
+
+  it('records the waste photo-less with a notice when the upload fails', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    const sb = makeSupabaseMock({}, { record_waste: { data: 'flow_1', error: null } })
+    uploadCrewImage.mockRejectedValue(new Error('storage down'))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const onNotice = vi.fn()
+    const onSaved = vi.fn()
+    render(<WasteForm {...baseProps} onNotice={onNotice} onSaved={onSaved} />)
+    fireEvent.change(screen.getByLabelText(/expiry date/i), {
+      target: { value: '2026-08-01' },
+    })
+    fireEvent.change(screen.getByLabelText(/add a photo/i), {
+      target: { files: [new File(['img'], 'moldy.jpg', { type: 'image/jpeg' })] },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /log waste/i }))
+    await waitFor(() => {
+      expect(sb.rpc).toHaveBeenCalledWith(
+        'record_waste',
+        expect.objectContaining({ p_photo_url: null }),
+      )
+    })
+    expect(onNotice).toHaveBeenCalledWith(
+      expect.stringMatching(/photo upload failed/i),
+    )
+    expect(onSaved).toHaveBeenCalled()
+    warn.mockRestore()
   })
 })

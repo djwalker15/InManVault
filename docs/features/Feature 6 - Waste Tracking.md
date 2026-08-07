@@ -21,7 +21,7 @@ Six waste reasons, each with its own context-specific detail table for structure
 Deviations from the original design, recorded here:
 - **`log_waste` edge function → `record_waste` plpgsql RPC.** Repo precedent: every inventory mutation is a single-transaction RPC (`record_purchase`, `restock_inventory`, `record_transfer`, `open_package`).
 - **`waste_prep_failure_details.recipe_id` / `batch_id` have no FK constraints yet** — `recipes` / `batch_events` land in v1.2; add the FKs in that slice.
-- **Photo capture deferred** — no storage bucket wired yet. The RPC accepts `p_photo_url`; the v1 form omits it.
+- **Photo capture shipped 2026-08** — the waste form uploads to the private `crew-media` bucket (`<crew_id>/waste/<uuid>.jpg`, see [[Media Storage]]) and passes the path as `p_photo_url`. Upload failure degrades to a photo-less event with a notice — never blocks logging. Photo *display* ships with the future waste-history page.
 - **Derived batch cost deferred to v1.2** — `total_cost` currently snapshots `quantity × last_unit_cost` (null when cost untracked).
 
 ## Waste Reasons

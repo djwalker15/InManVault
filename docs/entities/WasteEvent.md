@@ -15,7 +15,7 @@ A specialized record linked to a waste [[Flow]]. Captures the reason, cost, and 
 | `waste_reason` | enum | expired \| spoiled \| damaged \| prep_failure \| spilled \| other |
 | `total_cost` | numeric | Calculated — includes derived/recipe cost for batch-produced items. This is genuinely new data not on the Flow. |
 | `notes` | text | |
-| `photo_url` | text | |
+| `photo_url` | text | Holds a `crew-media` storage **path** (`<crew_id>/waste/<uuid>.jpg`) despite the name — shipped immutable slice, documented rather than renamed. See [[Media Storage]]. Uploaded before `record_waste`; the event is immutable, so the photo is frozen at record time. |
 
 > **Fields intentionally NOT on this table** (derive from Flow): crew_id, inventory_item_id, quantity_wasted, unit_cost, logged_by, logged_at. This eliminates data drift between WasteEvent and its Flow.
 

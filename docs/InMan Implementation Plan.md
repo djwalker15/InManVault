@@ -144,7 +144,7 @@ Operations requiring external service calls.
 
 | Function | Phase | Why Edge Function |
 |----------|-------|-------------------|
-| ~~`log_waste`~~ | v1.1 | **Shipped as the `record_waste` RPC** (see RPC table above); photo capture deferred until a storage bucket exists |
+| ~~`log_waste`~~ | v1.1 | **Shipped as the `record_waste` RPC** (see RPC table above); photo capture shipped 2026-08 via the `crew-media` bucket ([[Media Storage]]) |
 | `open_package` | shipped 2026-07 | **Shipped as an atomic plpgsql RPC**, not an edge function (see RPC table above) |
 | `complete_batch` | v1.2 | Complex logic: output creation, cost derivation |
 | `checkout_shopping_trip` | v1.3 | Batch purchase Flows + restock resolution |

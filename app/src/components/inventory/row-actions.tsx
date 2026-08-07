@@ -20,6 +20,7 @@ import {
   PrimaryButton,
   ProductThumb,
   TextButton,
+  Toast,
 } from '@/components/ds'
 import {
   deleteCrewImage,
@@ -112,6 +113,9 @@ export function RowActions({
   const [action, setAction] = useState<Action>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Non-blocking heads-up that outlives the closing form (e.g. a waste
+  // photo failed to upload but the event itself was recorded).
+  const [notice, setNotice] = useState<string | null>(null)
 
   function close() {
     setAction(null)
@@ -303,6 +307,8 @@ export function RowActions({
 
       {action === 'waste' && (
         <WasteForm
+          crewId={crewId}
+          onNotice={setNotice}
           inventoryItemId={inventoryItemId}
           unit={unit}
           quantity={quantity}
@@ -376,6 +382,14 @@ export function RowActions({
             onChanged()
             close()
           }}
+        />
+      )}
+
+      {notice && (
+        <Toast
+          message={notice}
+          tone="error"
+          onDismiss={() => setNotice(null)}
         />
       )}
     </section>

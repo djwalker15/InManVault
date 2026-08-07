@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { ImagePlus, X } from 'lucide-react'
 import { CtaTray, Field, PrimaryButton, TextButton } from '@/components/ds'
 import { useSupabase } from '@/lib/supabase'
+import { uploadCrewImage } from '@/lib/media'
 
 export type WasteReason =
   | 'expired'
@@ -20,6 +22,7 @@ const REASONS: { value: WasteReason; label: string }[] = [
 ]
 
 interface WasteFormProps {
+  crewId: string
   inventoryItemId: string
   unit: string
   quantity: number
@@ -29,6 +32,8 @@ interface WasteFormProps {
   busy: boolean
   setBusy: (b: boolean) => void
   setError: (e: string | null) => void
+  /** Non-blocking heads-up (e.g. photo upload failed, event still logged). */
+  onNotice: (message: string) => void
   onCancel: () => void
   onSaved: () => void
 }
@@ -36,13 +41,15 @@ interface WasteFormProps {
 /**
  * Log waste inline action (Journey - Logging Waste, v1 scope): quantity
  * with smart default, six-reason picker with reason-specific detail
- * fields, cost preview from last_unit_cost. Submits via record_waste,
- * which writes the waste flow + waste_events + one detail row
- * atomically; the space on detail rows defaults server-side to the
- * item's current space. Photo capture is deferred (no storage bucket
- * yet) — the RPC already accepts p_photo_url.
+ * fields, cost preview from last_unit_cost, optional photo. Submits via
+ * record_waste, which writes the waste flow + waste_events + one detail
+ * row atomically; the space on detail rows defaults server-side to the
+ * item's current space. The photo uploads to crew-media BEFORE the RPC
+ * and its path rides p_photo_url; an upload failure never blocks the
+ * waste record — the event is logged photo-less with a notice.
  */
 export function WasteForm({
+  crewId,
   inventoryItemId,
   unit,
   quantity,
@@ -51,6 +58,7 @@ export function WasteForm({
   busy,
   setBusy,
   setError,
+  onNotice,
   onCancel,
   onSaved,
 }: WasteFormProps) {
@@ -71,6 +79,7 @@ export function WasteForm({
   const [howSpilled, setHowSpilled] = useState('')
   const [duringActivity, setDuringActivity] = useState('')
   const [description, setDescription] = useState('')
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
 
   const wastedNum = Number(wasted)
   const parsed = wasted.trim() !== '' && !Number.isNaN(wastedNum)
@@ -131,12 +140,23 @@ export function WasteForm({
     setBusy(true)
     setError(null)
     try {
+      // WasteEvents are immutable — the photo is frozen at record time,
+      // so it must upload first. Failure degrades to a photo-less event.
+      let photoPath: string | null = null
+      if (photoFile) {
+        try {
+          photoPath = await uploadCrewImage(supabase, crewId, 'waste', photoFile)
+        } catch (uploadErr) {
+          console.warn('Waste photo upload failed', uploadErr)
+          onNotice('Photo upload failed — the waste was logged without it.')
+        }
+      }
       const { error: rpcError } = await supabase.rpc('record_waste', {
         p_inventory_item_id: inventoryItemId,
         p_quantity: wastedNum,
         p_waste_reason: reason,
         p_notes: notes.trim() || null,
-        p_photo_url: null,
+        p_photo_url: photoPath,
         p_details: buildDetails(),
       })
       if (rpcError) throw rpcError
@@ -299,6 +319,39 @@ export function WasteForm({
           className="rounded-xl bg-paper-100 p-3 font-body text-base text-ink-900 outline-none focus:bg-paper-250"
         />
       </label>
+
+      <div className="flex flex-col gap-2">
+        <span className="font-display text-sm font-bold uppercase tracking-[0.35px] text-ink-900">
+          Photo <span className="font-body lowercase text-ink-500">(optional)</span>
+        </span>
+        {photoFile ? (
+          <div className="flex items-center justify-between rounded-xl bg-paper-100 px-4 py-3">
+            <span className="truncate font-body text-sm text-ink-700">
+              {photoFile.name}
+            </span>
+            <button
+              type="button"
+              aria-label="Remove photo"
+              onClick={() => setPhotoFile(null)}
+              className="ml-3 flex size-7 shrink-0 items-center justify-center rounded-full text-ink-600 transition hover:bg-paper-200"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        ) : (
+          <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-paper-100 px-4 py-3 font-body text-sm text-ink-600 transition hover:bg-paper-200">
+            <ImagePlus size={16} aria-hidden />
+            Add a photo
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
+            />
+          </label>
+        )}
+      </div>
 
       <CtaTray sticky={false}>
         <PrimaryButton
