@@ -57,9 +57,10 @@ Where `docs/CLAUDE.md` and an older note disagree, `docs/CLAUDE.md` wins. It als
 
 When asked to work in a worktree (e.g. "make a worktree for kiosk-pin"):
 
-1. Run `scripts/new-worktree.sh <slice>` from the repo root. It creates `~/inman-<slice>` off
-   `origin/dev`, copies the gitignored env files a fresh checkout can't inherit (`app/.env.local`,
-   `app/.env.test`, `supabase/.env.local`), runs `npm ci` (which re-wires the husky hooks, since
+1. Run `scripts/new-worktree.sh <slice>` from the repo root. It creates
+   `$INMAN_WORKTREE_HOME/inman-<slice>` (default `~/inman-worktrees/inman-<slice>`) off `origin/dev`,
+   copies the gitignored env files a fresh checkout can't inherit (`app/.env.local`, `app/.env.test`,
+   `supabase/.env.local`), runs `npm ci` (which re-wires the husky hooks, since
    `core.hooksPath` is the relative `app/.husky/_`), and reserves a free Vite port in `.dev-port`.
 2. Switch the session in with `EnterWorktree`, passing **`path`** set to the path the script printed.
 

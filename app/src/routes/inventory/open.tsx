@@ -395,6 +395,7 @@ export default function OpenPackagePage() {
           packCost={packCost}
           itemsProduced={itemsProduced}
           existing={existing}
+          units={units}
           submitting={submitting}
           onBack={() => setStep('cost')}
           onConfirm={() => void handleSubmit()}
@@ -719,6 +720,7 @@ function ConfirmStep({
   packCost,
   itemsProduced,
   existing,
+  units,
   submitting,
   onBack,
   onConfirm,
@@ -729,6 +731,7 @@ function ConfirmStep({
   packCost: number
   itemsProduced: number
   existing: Map<string, { unit: string; quantity: number }>
+  units: UnitMap
   submitting: boolean
   onBack: () => void
   onConfirm: () => void
@@ -751,13 +754,24 @@ function ConfirmStep({
       </dl>
       <ul className="flex flex-col gap-1" aria-label="Children produced">
         {components.map((c) => {
-          const merges = existing.has(c.componentProductId)
+          // Same resolution the preview step and the open_package RPC use:
+          // an existing item only merges when its unit is convertible.
+          const resolution = resolveChild(
+            c,
+            count,
+            existing.get(c.componentProductId),
+            units,
+          )
+          const label =
+            resolution.kind === 'merge'
+              ? 'merges into existing'
+              : resolution.reason === 'unit-mismatch'
+                ? 'new item — unit mismatch'
+                : 'new item'
           return (
             <li key={c.componentProductId} className="font-body text-xs text-ink-600">
               {formatQuantity(c.quantity * count)} {c.unit} {c.name}{' '}
-              <span className="text-ink-500">
-                ({merges ? 'merges into existing' : 'new item'})
-              </span>
+              <span className="text-ink-500">({label})</span>
             </li>
           )
         })}
