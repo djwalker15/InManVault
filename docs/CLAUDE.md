@@ -471,6 +471,7 @@ Adding Inventory shipped (5 add methods, including receipt scan). The outbound l
 - `record_consumption` — the Checking Stock "Use it" action: consumption Flow, no child detail table; member-gated, row-locked, capped at on-hand quantity.
 - `record_waste` — atomic waste logging (v1.1): waste Flow + slim WasteEvent + one reason-specific detail row from a `p_details` jsonb payload; `total_cost` from `last_unit_cost`; member-gated, row-locked, capped at on-hand. Supersedes the planned `log_waste` edge function.
 - `soft_delete_inventory_item` — single-item removal: zero-out adjustment first when quantity ≠ 0 (flow sum stays reconcilable), then sets `deleted_at`; admin/owner-gated SECURITY DEFINER (a client-side update trips the RLS SELECT trap). See `Journey - Removing an Inventory Item`.
+- `soft_delete_product` — retire a crew-private product: admin/owner-gated SECURITY DEFINER; refuses (with the count) while active `inventory_items` reference it; image object left in place. Master rows are not retirable. Reached from the catalog browser's "My crew's" view.
 - `search_products_fuzzy` — trigram-ranked catalog candidates over the `products.name` GIN index; used by `parse-receipt` for line resolution and reusable by the product picker
 
 ### Edge Functions (MVP)

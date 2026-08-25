@@ -64,7 +64,8 @@ Buying a package adds a **sealed** [[InventoryItem]] counted in packs; **opening
 - **ProductGroup link is optional.** A Product can exist without belonging to a group. Ungrouped products are fully functional.
 - **Barcode scanning** resolves to Product regardless of Crew
 - **Promotion to master catalog** via [[ProductSubmission]] with merge capability
-- **Soft delete** via `deleted_at`
+- **Soft delete** via `deleted_at`. Crew products are **retired** through the `soft_delete_product` RPC (admin/owner, SECURITY DEFINER — a client-side update trips the RLS select trap). Refused while active [[Inventory Item]]s reference the product; the crew-media image is left in place (v1 orphan policy). Master-catalog rows are never retirable from the app.
+- **Editable in place** (crew products only) — name/brand/variant/size/barcode/category/photo from the catalog browser's "My crew's" view; `products_update` RLS allows any crew member.
 
 ## Relationships
 

@@ -25,6 +25,8 @@ interface CatalogBrowserProps {
   onBack: () => void
   filters: CatalogBrowserFilters
   onFiltersChange: (filters: CatalogBrowserFilters) => void
+  /** When provided, crew-private rows get an Edit action. */
+  onEdit?: (product: ProductRow) => void
 }
 
 const SOURCE_OPTIONS: { key: CatalogSource; label: string }[] = [
@@ -39,6 +41,7 @@ export function CatalogBrowser({
   onBack,
   filters,
   onFiltersChange,
+  onEdit,
 }: CatalogBrowserProps) {
   const supabase = useSupabase()
   const [products, setProducts] = useState<ProductRow[]>([])
@@ -197,6 +200,11 @@ export function CatalogBrowser({
               key={product.product_id}
               product={product}
               onClick={() => onSelect({ kind: 'product', product })}
+              onEdit={
+                onEdit && product.crew_id === crewId
+                  ? () => onEdit(product)
+                  : undefined
+              }
             />
           ))}
         </ul>

@@ -308,10 +308,13 @@ export function ProductResultRow({
   product,
   onClick,
   onCreateSimilar,
+  onEdit,
 }: {
   product: ProductRow
   onClick: () => void
   onCreateSimilar?: () => void
+  /** Crew-private rows only: open the edit/retire sheet. */
+  onEdit?: () => void
 }) {
   return (
     <li className="flex flex-col gap-2 rounded-xl bg-paper-100 p-3">
@@ -337,15 +340,27 @@ export function ProductResultRow({
           </span>
         </span>
       </button>
-      {onCreateSimilar && (
+      {(onCreateSimilar || onEdit) && (
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={onCreateSimilar}
-            className="inline-flex h-9 items-center justify-center rounded-full bg-paper-250 px-3 font-display text-xs font-bold text-sage-700"
-          >
-            Create similar
-          </button>
+          {onCreateSimilar && (
+            <button
+              type="button"
+              onClick={onCreateSimilar}
+              className="inline-flex h-9 items-center justify-center rounded-full bg-paper-250 px-3 font-display text-xs font-bold text-sage-700"
+            >
+              Create similar
+            </button>
+          )}
+          {onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label={`Edit ${product.name}`}
+              className="inline-flex h-9 items-center justify-center rounded-full bg-paper-250 px-3 font-display text-xs font-bold text-sage-700"
+            >
+              Edit
+            </button>
+          )}
         </div>
       )}
     </li>

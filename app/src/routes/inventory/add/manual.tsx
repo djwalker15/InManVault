@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check } from 'lucide-react'
+import { Sheet } from '@/components/ds'
 import { SignedInLayout } from '@/components/signed-in/signed-in-layout'
 import {
   AddItemForms,
   type AddPhase,
 } from '@/components/inventory/add-item-forms'
 import { CatalogBrowser } from '@/components/inventory/catalog-browser'
+import { CustomProductForm } from '@/components/inventory/custom-product-form'
 import { ProductSearch } from '@/components/inventory/product-search'
 import {
   INITIAL_BROWSE_FILTERS,
@@ -37,6 +39,14 @@ export default function ManualAddInventoryPage() {
   const [browseFilters, setBrowseFilters] = useState<CatalogBrowserFilters>(
     INITIAL_BROWSE_FILTERS,
   )
+  // Crew product being edited/retired from the browse view (null = closed).
+  const [editingProduct, setEditingProduct] = useState<ProductRow | null>(null)
+
+  function closeEditor(changed: boolean) {
+    setEditingProduct(null)
+    // A fresh filters object makes CatalogBrowser refetch to the same depth.
+    if (changed) setBrowseFilters((f) => ({ ...f }))
+  }
 
   function handleSelect(selection: Selection) {
     if (selection.kind === 'restock') {
@@ -157,6 +167,7 @@ export default function ManualAddInventoryPage() {
             onBack={() => setPhase({ kind: 'search' })}
             filters={browseFilters}
             onFiltersChange={setBrowseFilters}
+            onEdit={setEditingProduct}
           />
         ) : (
           <AddItemForms
@@ -167,6 +178,23 @@ export default function ManualAddInventoryPage() {
             onSaved={handleSaved}
             onCancel={() => setPhase({ kind: resolver })}
           />
+        )}
+
+        {editingProduct && activeCrewId && user && (
+          <Sheet
+            open
+            onClose={() => closeEditor(false)}
+            ariaLabel="Edit product"
+          >
+            <CustomProductForm
+              crewId={activeCrewId}
+              userId={user.id}
+              product={editingProduct}
+              onCreated={() => closeEditor(true)}
+              onRetired={() => closeEditor(true)}
+              onCancel={() => closeEditor(false)}
+            />
+          </Sheet>
         )}
       </div>
     </SignedInLayout>

@@ -54,6 +54,7 @@ function renderBrowser(
     onSelect?: (s: unknown) => void
     filters?: CatalogBrowserFilters
     onFiltersChange?: (f: CatalogBrowserFilters) => void
+    onEdit?: (p: ProductRow) => void
   } = {},
 ) {
   return render(
@@ -63,6 +64,7 @@ function renderBrowser(
       onBack={() => {}}
       filters={props.filters ?? INITIAL_BROWSE_FILTERS}
       onFiltersChange={props.onFiltersChange ?? (() => {})}
+      onEdit={props.onEdit}
     />,
   )
 }
@@ -81,6 +83,32 @@ describe('CatalogBrowser', () => {
       ascending: true,
     })
     expect(sb.tables.products.range).toHaveBeenCalledWith(0, 24)
+  })
+
+  it('offers Edit only on the crew\'s own rows, and only when onEdit is given', async () => {
+    mockBrowse()
+    const onEdit = vi.fn()
+    renderBrowser({ onEdit })
+
+    await waitFor(() => {
+      expect(screen.getByText('Homemade syrup')).toBeInTheDocument()
+    })
+    const edits = screen.getAllByRole('button', { name: /^edit /i })
+    expect(edits).toHaveLength(1)
+    expect(edits[0]).toHaveAccessibleName('Edit Homemade syrup')
+    fireEvent.click(edits[0])
+    expect(onEdit).toHaveBeenCalledWith(
+      expect.objectContaining({ product_id: 'prod_2', crew_id: 'crew_abc' }),
+    )
+  })
+
+  it('renders no Edit action without an onEdit handler', async () => {
+    mockBrowse()
+    renderBrowser()
+    await waitFor(() => {
+      expect(screen.getByText('Homemade syrup')).toBeInTheDocument()
+    })
+    expect(screen.queryByRole('button', { name: /^edit /i })).toBeNull()
   })
 
   it('selecting a row emits the same selection shape as search', async () => {

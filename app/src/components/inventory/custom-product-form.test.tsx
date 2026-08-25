@@ -495,3 +495,117 @@ describe('CustomProductForm — photo upload', () => {
     expect(screen.getByText(/add a photo/i)).toBeInTheDocument()
   })
 })
+
+describe('CustomProductForm — edit mode', () => {
+  const mine = {
+    product_id: 'prod_mine',
+    crew_id: 'crew_abc',
+    name: 'Homemade syrup',
+    brand: null,
+    variant: 'Vanilla',
+    barcode: '0123',
+    image_url: null,
+    size_value: null,
+    size_unit: null,
+    default_category_id: null,
+  }
+
+  function renderEdit(
+    sb: ReturnType<typeof makeSupabaseMock>,
+    handlers: { onCreated?: (p: unknown) => void; onRetired?: (id: string) => void } = {},
+  ) {
+    void sb
+    return render(
+      <CustomProductForm
+        crewId="crew_abc"
+        userId="user_1"
+        product={mine}
+        onCreated={handlers.onCreated ?? (() => {})}
+        onRetired={handlers.onRetired}
+        onCancel={() => {}}
+      />,
+    )
+  }
+
+  it('prefills from the product (barcode included) and updates it in place', async () => {
+    const sb = mockBrands(variantRows)
+    const saved = { ...mine, name: 'House syrup' }
+    sb.tables.products.single.mockImplementation(() => ({
+      then: (onFulfilled: (v: { data: unknown; error: null }) => unknown) =>
+        Promise.resolve({ data: saved, error: null }).then(onFulfilled),
+    }))
+    const onCreated = vi.fn()
+    renderEdit(sb, { onCreated })
+
+    expect(screen.getByRole('heading', { name: /edit product/i })).toBeInTheDocument()
+    expect(screen.getByLabelText(/product name/i)).toHaveValue('Homemade syrup')
+    expect(screen.getByLabelText(/variant/i)).toHaveValue('Vanilla')
+    expect(screen.getByLabelText(/barcode/i)).toHaveValue('0123')
+
+    fireEvent.change(screen.getByLabelText(/product name/i), {
+      target: { value: 'House syrup' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }))
+
+    await waitFor(() => {
+      expect(sb.tables.products.update).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'House syrup', variant: 'Vanilla', barcode: '0123' }),
+      )
+    })
+    expect(sb.tables.products.eq).toHaveBeenCalledWith('product_id', 'prod_mine')
+    expect(sb.tables.products.insert).not.toHaveBeenCalled()
+    await waitFor(() => {
+      expect(onCreated).toHaveBeenCalledWith(expect.objectContaining({ name: 'House syrup' }))
+    })
+  })
+
+  it('retires the product through soft_delete_product after a confirm step', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    const sb = makeSupabaseMock(
+      { products: { select: { data: variantRows, error: null } } },
+      { soft_delete_product: { data: null, error: null } },
+    )
+    const onRetired = vi.fn()
+    renderEdit(sb, { onRetired })
+
+    fireEvent.click(screen.getByRole('button', { name: /retire product…/i }))
+    expect(sb.rpc).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: /yes, retire it/i }))
+
+    await waitFor(() => {
+      expect(sb.rpc).toHaveBeenCalledWith('soft_delete_product', {
+        p_product_id: 'prod_mine',
+      })
+    })
+    await waitFor(() => {
+      expect(onRetired).toHaveBeenCalledWith('prod_mine')
+    })
+  })
+
+  it('surfaces the RPC refusal when inventory items still reference it', async () => {
+    mockClerk({ user: { id: 'user_1' } })
+    const sb = makeSupabaseMock(
+      { products: { select: { data: variantRows, error: null } } },
+      {
+        soft_delete_product: {
+          data: null,
+          error: new Error(
+            '2 inventory items still reference this product — remove or re-point them first',
+          ),
+        },
+      },
+    )
+    const onRetired = vi.fn()
+    renderEdit(sb, { onRetired })
+
+    fireEvent.click(screen.getByRole('button', { name: /retire product…/i }))
+    fireEvent.click(screen.getByRole('button', { name: /yes, retire it/i }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/2 inventory items still reference this product/i),
+      ).toBeInTheDocument()
+    })
+    expect(onRetired).not.toHaveBeenCalled()
+  })
+})
