@@ -109,6 +109,23 @@ interface Candidate {
   product_id: string
   name: string
   brand: string | null
+  variant: string | null
+  size_value: number | null
+  size_unit: string | null
+  /** Dual-mode: external http(s) URL or a crew-media storage path. */
+  image_url: string | null
+}
+
+/** Candidate fields worth showing the disambiguation model (no image_url). */
+function candidateForPrompt(c: Candidate) {
+  return {
+    product_id: c.product_id,
+    name: c.name,
+    brand: c.brand,
+    variant: c.variant,
+    size_value: c.size_value,
+    size_unit: c.size_unit,
+  }
 }
 
 interface ResolvedRow {
@@ -211,17 +228,17 @@ Deno.serve(async (req) => {
         p_query: query,
         p_limit: CANDIDATE_LIMIT,
       })
-      const cands = (data ?? []) as {
-        product_id: string
-        name: string
-        brand: string | null
-      }[]
+      const cands = (data ?? []) as Candidate[]
       candidatesByIndex.set(
         i,
         cands.map((c) => ({
           product_id: c.product_id,
           name: c.name,
-          brand: c.brand,
+          brand: c.brand ?? null,
+          variant: c.variant ?? null,
+          size_value: c.size_value ?? null,
+          size_unit: c.size_unit ?? null,
+          image_url: c.image_url ?? null,
         })),
       )
     }),
@@ -240,7 +257,7 @@ Deno.serve(async (req) => {
           index: i,
           raw_text: it.raw_text,
           canonical_name: it.canonical_name,
-          candidates: candidatesByIndex.get(i) ?? [],
+          candidates: (candidatesByIndex.get(i) ?? []).map(candidateForPrompt),
         })),
       )
       for (const c of choices) {
@@ -456,7 +473,7 @@ async function disambiguate(
     index: number
     raw_text: string
     canonical_name: string
-    candidates: Candidate[]
+    candidates: ReturnType<typeof candidateForPrompt>[]
   }[],
 ): Promise<{ index: number; product_id: string; confidence: number }[]> {
   const out = await callClaudeTool(RESOLVE_TOOL, [

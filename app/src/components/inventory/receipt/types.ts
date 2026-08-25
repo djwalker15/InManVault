@@ -3,6 +3,12 @@ export interface ReceiptCandidate {
   product_id: string
   name: string
   brand: string | null
+  // Optional: older payloads (and e2e mocks) predate these fields.
+  variant?: string | null
+  size_value?: number | null
+  size_unit?: string | null
+  /** Dual-mode products.image_url — resolve via ProductThumb / media lib. */
+  image_url?: string | null
 }
 
 export type ReceiptResolution = 'matched' | 'ambiguous' | 'new'

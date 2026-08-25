@@ -4,9 +4,11 @@ import {
   Chip,
   CtaTray,
   PrimaryButton,
+  ProductThumb,
   Sheet,
   TextButton,
 } from '@/components/ds'
+import { formatSize } from '@/components/inventory/format'
 import { ProductSearch } from '@/components/inventory/product-search'
 import type { Selection } from '@/components/inventory/types'
 import { SpaceSelect } from '@/components/spaces/space-select'
@@ -346,23 +348,40 @@ function ResolutionControl({
       <Chip variant="warn">Needs review</Chip>
       {row.candidates.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {row.candidates.map((c: ReceiptCandidate) => (
-            <button
-              key={c.product_id}
-              type="button"
-              onClick={() =>
-                onChoose({
-                  kind: 'product',
-                  productId: c.product_id,
-                  productName: c.name,
-                })
-              }
-              className="rounded-full bg-paper-50 px-3 py-1.5 font-body text-xs text-ink-900 transition hover:bg-paper-250"
-            >
-              {c.name}
-              {c.brand ? <span className="text-ink-500"> · {c.brand}</span> : null}
-            </button>
-          ))}
+          {row.candidates.map((c: ReceiptCandidate) => {
+            // Same meta line as the product picker rows: brand · variant · size.
+            const meta = [
+              c.brand,
+              c.variant ?? null,
+              formatSize(c.size_value ?? null, c.size_unit ?? null),
+            ]
+              .filter(Boolean)
+              .join(' · ')
+            return (
+              <button
+                key={c.product_id}
+                type="button"
+                onClick={() =>
+                  onChoose({
+                    kind: 'product',
+                    productId: c.product_id,
+                    productName: c.name,
+                  })
+                }
+                className="flex items-center gap-2 rounded-full bg-paper-50 py-1 pl-1 pr-3 font-body text-xs text-ink-900 transition hover:bg-paper-250"
+              >
+                <ProductThumb
+                  imageUrl={c.image_url}
+                  name={c.name}
+                  className="size-7 rounded-full"
+                />
+                <span className="text-left">
+                  {c.name}
+                  {meta ? <span className="text-ink-500"> · {meta}</span> : null}
+                </span>
+              </button>
+            )
+          })}
         </div>
       )}
       <div className="flex flex-wrap gap-3">
