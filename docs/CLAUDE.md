@@ -471,7 +471,7 @@ Adding Inventory shipped (5 add methods, including receipt scan). The outbound l
 - `record_consumption` — the Checking Stock "Use it" action: consumption Flow, no child detail table; member-gated, row-locked, capped at on-hand quantity.
 - `record_waste` — atomic waste logging (v1.1): waste Flow + slim WasteEvent + one reason-specific detail row from a `p_details` jsonb payload; `total_cost` from `last_unit_cost`; member-gated, row-locked, capped at on-hand. Supersedes the planned `log_waste` edge function.
 - `soft_delete_inventory_item` — single-item removal: zero-out adjustment first when quantity ≠ 0 (flow sum stays reconcilable), then sets `deleted_at`; admin/owner-gated SECURITY DEFINER (a client-side update trips the RLS SELECT trap). See `Journey - Removing an Inventory Item`.
-- `search_products_fuzzy` — trigram-ranked catalog candidates over the `products.name` GIN index; used by `parse-receipt` for line resolution and reusable by the product picker
+- `search_products_fuzzy` — trigram-ranked catalog candidates over the name + variant GIN index; returns brand/variant/size/`image_url` so consumers can render the standard product row (thumb + meta line); used by `parse-receipt` for line resolution and reusable by the product picker
 
 ### Edge Functions (MVP)
 - `send_invite` — insert Invite + send email (external API)
