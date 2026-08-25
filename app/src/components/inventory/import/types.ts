@@ -4,6 +4,7 @@ import type { ProductRow } from '../types'
 export type InmanField =
   | 'name'
   | 'brand'
+  | 'variant'
   | 'quantity'
   | 'unit'
   | 'location'
@@ -16,6 +17,7 @@ export const REQUIRED_FIELDS: InmanField[] = ['name', 'quantity', 'unit']
 export const FIELD_LABELS: Record<InmanField, string> = {
   name: 'Product name',
   brand: 'Brand',
+  variant: 'Variant (flavor / scent / style)',
   quantity: 'Quantity',
   unit: 'Unit',
   location: 'Location',
@@ -52,6 +54,8 @@ export interface ResolvedRow {
   productId: string | null
   productName: string | null
   productBrand: string | null
+  /** Variant for a new product (null when matched or blank). */
+  productVariant: string | null
   productBarcode: string | null
   /** Matched product's dual-mode image_url (null for new/unmatched rows). */
   productImageUrl: string | null
@@ -74,6 +78,7 @@ export interface ImportPayloadRow {
   product_id: string | null
   product_name: string | null
   product_brand: string | null
+  product_variant: string | null
   product_barcode: string | null
   quantity: number
   unit: string

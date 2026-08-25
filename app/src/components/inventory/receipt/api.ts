@@ -67,6 +67,8 @@ export function toPayloadRows(
       product_id: r.choice.kind === 'product' ? r.choice.productId : null,
       product_name: r.choice.kind === 'create' ? r.choice.name.trim() : null,
       product_brand: r.choice.kind === 'create' ? r.brand : null,
+      // Receipt lines don't carry a variant; the user can set it later.
+      product_variant: null,
       product_barcode: null,
       quantity: r.quantity as number,
       unit: r.unit,

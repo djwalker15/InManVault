@@ -10,6 +10,7 @@ import {
 const ALL_FIELDS: InmanField[] = [
   'name',
   'brand',
+  'variant',
   'quantity',
   'unit',
   'location',
