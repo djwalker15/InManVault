@@ -92,7 +92,7 @@ If the search returns no catalog matches and no existing inventory, Group C is e
 
 The **Browse the catalog** entry point (below the search field) swaps Step 1 into a browse view — for discovery ("what's in the catalog?") and dedup checks ("did we already create this?") that search can't answer:
 
-- **Source chips:** All · Catalog (`crew_id IS NULL`) · My crew's (`crew_id` = active [[Crew]]). The crew filter doubles as the crew's custom-products view (the listing half of the "own products" request — editing/retiring products is a separate concern).
+- **Source chips:** All · Catalog (`crew_id IS NULL`) · My crew's (`crew_id` = active [[Crew]]). The crew filter doubles as the crew's custom-products view: each crew-private row carries an **Edit** action that opens the product form in edit mode (name/brand/variant/size/barcode/category/photo) with a **Retire** section that calls `soft_delete_product` — refused while inventory items still reference the product. This absorbs the "view for my own custom products" request (ClickUp 86e2jqrfc).
 - **Category chips:** filter by `default_category_id` ([[Category]], system + crew-custom), single-select with an All chip.
 - Rows render like Group A results (name · brand · variant · size · source badge), ordered by name, 25 per page with **Load more**.
 - Selecting a row proceeds to Step 2 exactly like a search selection. Backing out of Step 2 returns to the browse view with filters intact; after a save, Stay in Flow also returns to browse when the item came from there.

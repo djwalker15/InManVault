@@ -411,6 +411,57 @@ describe('AddInventoryPage — Step 1 product resolution', () => {
     })
   })
 
+  it('browse: Edit on a crew product opens the edit sheet, Cancel closes it', async () => {
+    const crewProduct = {
+      ...masterProduct,
+      product_id: 'prod_mine',
+      crew_id: 'crew_abc',
+      name: 'House syrup',
+      variant: null,
+    }
+    makeSupabaseMock({
+      crew_members: {
+        select: {
+          data: [
+            {
+              crew_id: 'crew_abc',
+              role: 'admin',
+              crews: { name: 'Test', owner_id: 'user_1' },
+            },
+          ],
+          error: null,
+        },
+      },
+      products: {
+        select: { data: [masterProduct, crewProduct], error: null, count: 2 },
+      },
+      categories: { select: { data: [], error: null } },
+      unit_definitions: { select: { data: [], error: null } },
+      spaces: { select: { data: [], error: null } },
+    })
+    renderWithRouter(<AddInventoryPage />)
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /browse the catalog/i }),
+    )
+    // Only the crew-private row is editable.
+    const edit = await screen.findByRole('button', { name: /^edit house syrup$/i })
+    expect(screen.queryByRole('button', { name: /^edit tomato paste$/i })).toBeNull()
+
+    fireEvent.click(edit)
+    const sheet = await screen.findByRole('dialog', { name: /edit product/i })
+    expect(sheet).toBeInTheDocument()
+    expect(screen.getByLabelText(/product name/i)).toHaveValue('House syrup')
+    expect(screen.getByRole('button', { name: /retire product…/i })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: /edit product/i })).toBeNull()
+    })
+    // Still on the browse view.
+    expect(screen.getByRole('list', { name: /catalog products/i })).toBeInTheDocument()
+  })
+
   it('back-arrow routes to the add-method picker', async () => {
     makeSupabaseMock({
       crew_members: {
