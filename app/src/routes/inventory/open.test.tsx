@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { Route, Routes } from 'react-router-dom'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { renderWithRoutes } from '@/test/utils'
 import { mockClerk } from '@/test/clerk-mock'
 import { makeSupabaseMock } from '@/test/supabase-mock'
@@ -38,6 +38,7 @@ const componentNames = [
 const unitDefs = [
   { unit: 'count', unit_category: 'count', to_base_factor: 1 },
   { unit: 'pkg', unit_category: 'count', to_base_factor: 1 },
+  { unit: 'oz', unit_category: 'weight', to_base_factor: 28.35 },
 ]
 
 const sampleSpaces = [
@@ -50,6 +51,12 @@ function mockForOpen(
     data: 'evt_1',
     error: null,
   },
+  existingRows: {
+    product_id: string
+    unit: string
+    quantity: number
+    created_at: string
+  }[] = [],
 ) {
   return makeSupabaseMock(
     {
@@ -68,7 +75,7 @@ function mockForOpen(
       // maybeSingle = the package item; select = existing items for preview.
       inventory_items: {
         maybeSingle: { data: packageItem, error: null },
-        select: { data: [], error: null },
+        select: { data: existingRows, error: null },
       },
       // maybeSingle = the package product; select = component name lookup.
       products: {
@@ -145,6 +152,41 @@ describe('OpenPackagePage — break wizard', () => {
     await waitFor(() => {
       expect(screen.getByText(/package opened/i)).toBeInTheDocument()
     })
+  })
+
+  it('labels cross-category children as new items on the confirm step', async () => {
+    // Coke stock is tracked by weight (oz) while the component is a count →
+    // the RPC creates a new item; Sprite is count → merges. Fanta has no stock.
+    mockForOpen(undefined, [
+      { product_id: 'c_coke', unit: 'oz', quantity: 8, created_at: '2026-08-01' },
+      { product_id: 'c_sprite', unit: 'count', quantity: 2, created_at: '2026-08-01' },
+    ])
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByText(/how many to open\?/i)).toBeInTheDocument()
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^preview$/i }))
+    await waitFor(() => {
+      expect(screen.getByText(/store contents in/i)).toBeInTheDocument()
+    })
+    fireEvent.click(screen.getByRole('button', { name: /review cost/i }))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /continue/i })).toBeEnabled()
+    })
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('list', { name: /children produced/i }),
+      ).toBeInTheDocument()
+    })
+    const rows = within(
+      screen.getByRole('list', { name: /children produced/i }),
+    ).getAllByRole('listitem')
+    expect(rows[0]).toHaveTextContent(/coke.*\(new item — unit mismatch\)/i)
+    expect(rows[1]).toHaveTextContent(/sprite.*\(merges into existing\)/i)
+    expect(rows[2]).toHaveTextContent(/fanta.*\(new item\)/i)
   })
 
   it('surfaces a friendly error when the RPC fails and commits nothing', async () => {
