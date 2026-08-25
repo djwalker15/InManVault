@@ -176,6 +176,7 @@ System reads headers from the uploaded file. User maps each column to an InMan f
 |-------------|---------|--------|
 | "Item Name" | → Product name *(required)* | ✅ Mapped |
 | "Brand" | → Product brand | ✅ Mapped |
+| "Flavor" | → Variant (flavor / scent / style) | ✅ Mapped |
 | "Qty" | → Quantity *(required)* | ✅ Mapped |
 | "Location" | → Current space | ⚠️ Needs review |
 | "Category" | → Category | ✅ Mapped |
@@ -191,7 +192,7 @@ System processes the mapped data and shows a preview table. Each row displays a 
 
 | Status | Meaning | Action |
 |--------|---------|--------|
-| ✅ Product matched | Found in master catalog by name/barcode | Auto-linked |
+| ✅ Product matched | Found in master catalog by barcode, or by name **+ variant** (the identity key since 2026-08-25 — "LaCroix / Lime" ≠ "LaCroix / Pamplemousse") | Auto-linked |
 | 🆕 New product | No catalog match | Will create crew-private [[Product]] |
 | ⚠️ Ambiguous match | Multiple catalog results | User picks the right one |
 | ❌ Invalid data | Missing required fields or bad format | Fix or skip |

@@ -98,13 +98,74 @@ describe('resolveRows', () => {
   })
 
   it('guessMapping auto-detects headers by synonym', () => {
-    const m = guessMapping(['Item Name', 'Qty', 'UPC', 'Where', 'Notes'])
+    const m = guessMapping(['Item Name', 'Qty', 'UPC', 'Where', 'Notes', 'Flavor'])
     expect(m).toEqual({
       name: 'Item Name',
+      variant: 'Flavor',
       quantity: 'Qty',
       barcode: 'UPC',
       location: 'Where',
       notes: 'Notes',
+    })
+  })
+
+  describe('variant-aware matching', () => {
+    const lime = product({ product_id: 'lime', name: 'LaCroix', variant: 'Lime', barcode: null })
+    const pample = product({
+      product_id: 'pample',
+      name: 'LaCroix',
+      variant: 'Pamplemousse',
+      barcode: null,
+    })
+    const plain = product({ product_id: 'plain', name: 'Seltzer', variant: null, barcode: null })
+    const withVariant = (rows: Record<string, string>[]) => {
+      const input = baseInput(rows, { products: [lime, pample, plain] })
+      input.parsed.headers.push('Flavor')
+      input.mapping.variant = 'Flavor'
+      return input
+    }
+
+    it('matches on (name, variant) so two flavors do not collide', () => {
+      const rows = resolveRows(
+        withVariant([
+          { Name: 'LaCroix', Flavor: 'Lime', Qty: '1', Unit: 'count', Location: '', UPC: '' },
+          { Name: 'LaCroix', Flavor: 'pamplemousse', Qty: '1', Unit: 'count', Location: '', UPC: '' },
+        ]),
+      )
+      expect(rows[0]).toMatchObject({ productResolution: 'matched', productId: 'lime' })
+      expect(rows[1]).toMatchObject({ productResolution: 'matched', productId: 'pample' })
+    })
+
+    it('creates a new product for an unknown variant and carries it in the payload', () => {
+      const [row] = resolveRows(
+        withVariant([
+          { Name: 'LaCroix', Flavor: 'Coconut', Qty: '1', Unit: 'count', Location: '', UPC: '' },
+        ]),
+      )
+      expect(row.productResolution).toBe('new')
+      expect(row.productVariant).toBe('Coconut')
+      expect(toPayloadRow(row)).toMatchObject({
+        product_name: 'LaCroix',
+        product_variant: 'Coconut',
+      })
+    })
+
+    it('flags a variant-less row as ambiguous when only variants exist under that name', () => {
+      const [row] = resolveRows(
+        withVariant([
+          { Name: 'LaCroix', Flavor: '', Qty: '1', Unit: 'count', Location: '', UPC: '' },
+        ]),
+      )
+      expect(row.productResolution).toBe('ambiguous')
+    })
+
+    it('still matches a variant-less product when no variant column is given', () => {
+      const [row] = resolveRows(
+        withVariant([
+          { Name: 'Seltzer', Flavor: '', Qty: '1', Unit: 'count', Location: '', UPC: '' },
+        ]),
+      )
+      expect(row).toMatchObject({ productResolution: 'matched', productId: 'plain' })
     })
   })
 
@@ -118,6 +179,7 @@ describe('resolveRows', () => {
       product_id: null,
       product_name: 'Homemade Syrup',
       product_brand: null,
+      product_variant: null,
       product_barcode: '999',
       quantity: 2,
       unit: 'oz',

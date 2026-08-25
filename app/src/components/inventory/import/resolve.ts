@@ -12,6 +12,7 @@ import type {
 const FIELD_SYNONYMS: Record<InmanField, string[]> = {
   name: ['name', 'product', 'product name', 'item', 'item name', 'description'],
   brand: ['brand', 'make', 'manufacturer'],
+  variant: ['variant', 'flavor', 'flavour', 'scent', 'style'],
   quantity: ['quantity', 'qty', 'count', 'amount', 'on hand'],
   unit: ['unit', 'units', 'uom'],
   location: ['location', 'space', 'where', 'place', 'storage'],
@@ -66,6 +67,10 @@ function norm(s: string): string {
   return s.trim().toLowerCase()
 }
 
+function identityKey(name: string, variant: string | null | undefined): string {
+  return `${norm(name)}\u0000${norm(variant ?? '')}`
+}
+
 function spacePath(id: string, byId: Map<string, SpaceLite>): string {
   const parts: string[] = []
   let cursor: SpaceLite | undefined = byId.get(id)
@@ -89,11 +94,15 @@ export function resolveRows(input: ResolveInput): ResolvedRow[] {
   const spaceByName = new Map(spaces.map((s) => [norm(s.name), s]))
   const categoryByName = new Map(categories.map((c) => [norm(c.name), c]))
   const productByBarcode = new Map<string, ProductRow>()
+  // Identity key is (name, variant): "LaCroix / Lime" ≠ "LaCroix / Pamplemousse".
+  const productsByKey = new Map<string, ProductRow[]>()
   const productsByName = new Map<string, ProductRow[]>()
   for (const p of products) {
     if (p.barcode) productByBarcode.set(p.barcode, p)
-    const key = norm(p.name)
-    productsByName.set(key, [...(productsByName.get(key) ?? []), p])
+    const nameKey = norm(p.name)
+    productsByName.set(nameKey, [...(productsByName.get(nameKey) ?? []), p])
+    const key = identityKey(p.name, p.variant)
+    productsByKey.set(key, [...(productsByKey.get(key) ?? []), p])
   }
   const unitSet = new Set(validUnits)
 
@@ -105,6 +114,7 @@ export function resolveRows(input: ResolveInput): ResolvedRow[] {
   return parsed.rows.map((row, index) => {
     const name = cell(row, 'name')
     const brand = cell(row, 'brand')
+    const variant = cell(row, 'variant')
     const quantityStr = cell(row, 'quantity')
     const unit = cell(row, 'unit') || defaults.unit
     const locationStr = cell(row, 'location')
@@ -127,7 +137,13 @@ export function resolveRows(input: ResolveInput): ResolvedRow[] {
       matchedImageUrl = barcodeMatch.image_url
       productResolution = 'matched'
     } else if (name) {
-      const byName = productsByName.get(norm(name)) ?? []
+      // Exact (name, variant) first. A row with no variant falls back to every
+      // same-name product so the user is asked which flavor they meant rather
+      // than silently creating a duplicate line.
+      let byName = productsByKey.get(identityKey(name, variant)) ?? []
+      if (byName.length === 0 && !variant) {
+        byName = productsByName.get(norm(name)) ?? []
+      }
       if (byName.length === 1) {
         productId = byName[0].product_id
         matchedName = byName[0].name
@@ -188,6 +204,7 @@ export function resolveRows(input: ResolveInput): ResolvedRow[] {
       productId,
       productName: productId ? null : name || null,
       productBrand: productId ? null : brand || null,
+      productVariant: productId ? null : variant || null,
       productBarcode: productId ? null : barcode || null,
       productImageUrl: matchedImageUrl,
       quantity,
@@ -210,6 +227,7 @@ export function toPayloadRow(row: ResolvedRow): ImportPayloadRow {
     product_id: row.productId,
     product_name: row.productName,
     product_brand: row.productBrand,
+    product_variant: row.productVariant,
     product_barcode: row.productBarcode,
     quantity: row.quantity as number,
     unit: row.unit,
